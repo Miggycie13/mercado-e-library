@@ -1,0 +1,401 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as FileSystem from "expo-file-system";
+import * as Sharing from "expo-sharing";
+import { StatusBar } from "expo-status-bar";
+import { useEffect, useState } from "react";
+import {
+  ActivityIndicator,
+  FlatList,
+  Modal,
+  Platform,
+  Pressable,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  useWindowDimensions,
+  View,
+} from "react-native";
+
+type User = { id: string; name: string; email: string; role: string };
+type Book = { id: string; title: string; author: string; category: string; year: number; description: string; sourceUrl?: string | null };
+type Quota = { limit: number; remaining: number; mode: string };
+type Trace = { name: string };
+type Pending = { confirmationId: string; title: string; author: string };
+type Message = { role: "user" | "assistant"; content: string; trace?: Trace[]; pending?: Pending | null };
+type Tab = "catalog" | "library" | "favorites" | "account";
+
+const DEFAULT_URL = Platform.OS === "android" ? "http://10.0.2.2:4000" : "http://localhost:4000";
+const SERIF = Platform.OS === "ios" ? "Georgia" : "serif";
+const TABS: Array<{ id: Tab; label: string }> = [
+  { id: "catalog", label: "Catalog" },
+  { id: "library", label: "Library" },
+  { id: "favorites", label: "Favorites" },
+  { id: "account", label: "Account" },
+];
+const SUGGESTIONS = [
+  "Recommend a sea adventure and tell me about the closest match",
+  "Compare Dracula and Frankenstein",
+  "Add Treasure Island to my library",
+];
+
+async function request(base: string, path: string, token: string | null, options: RequestInit = {}) {
+  const headers = new Headers(options.headers);
+  if (options.body) headers.set("Content-Type", "application/json");
+  if (token) headers.set("Authorization", `Bearer ${token}`);
+  const response = await fetch(`${base}${path}`, { ...options, headers });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(data.error || "Request failed.");
+  return data;
+}
+
+export default function App() {
+  const [base, setBase] = useState(DEFAULT_URL);
+  const [token, setToken] = useState<string | null>(null);
+  const [user, setUser] = useState<User | null>(null);
+  const [ready, setReady] = useState(false);
+  const [tab, setTab] = useState<Tab>("catalog");
+  const [query, setQuery] = useState("");
+  const [books, setBooks] = useState<Book[]>([]);
+  const [selected, setSelected] = useState<Book | null>(null);
+  const [quota, setQuota] = useState<Quota | null>(null);
+  const [error, setError] = useState("");
+  const [email, setEmail] = useState("reader@elibrary.local");
+  const [password, setPassword] = useState("Reader123!");
+  const [chatOpen, setChatOpen] = useState(false);
+  const [draft, setDraft] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [messages, setMessages] = useState<Message[]>([{
+    role: "assistant",
+    content: "Ask me about the live catalog. I will ask before I save a book to My Library.",
+  }]);
+
+  useEffect(() => {
+    (async () => {
+      const [savedUrl, savedToken] = await Promise.all([
+        AsyncStorage.getItem("elibrary.api"),
+        AsyncStorage.getItem("elibrary.token"),
+      ]);
+      if (savedUrl) setBase(savedUrl);
+      if (savedToken) setToken(savedToken);
+      setReady(true);
+    })();
+  }, []);
+
+  useEffect(() => {
+    if (!ready) return;
+    const active = base;
+    request(active, "/api/downloads/quota", token)
+      .then(setQuota)
+      .catch(() => setQuota(null));
+    if (!token) {
+      setUser(null);
+      return;
+    }
+    request(active, "/api/auth/me", token)
+      .then((data) => setUser(data.user))
+      .catch(() => {
+        setToken(null);
+        AsyncStorage.removeItem("elibrary.token");
+      });
+  }, [ready, base, token]);
+
+  useEffect(() => {
+    if (!ready || tab === "account") return;
+    const path = tab === "catalog"
+      ? `/api/books?q=${encodeURIComponent(query)}&pageSize=30`
+      : `/api/user/${tab}`;
+    if (tab !== "catalog" && !token) {
+      setBooks([]);
+      return;
+    }
+    request(base, path, token)
+      .then((data) => setBooks(data.books))
+      .catch((reason) => setError(reason.message));
+  }, [ready, tab, query, token, base]);
+
+  async function signIn() {
+    setError("");
+    try {
+      const data = await request(base, "/api/auth/login", null, {
+        method: "POST",
+        body: JSON.stringify({ email, password }),
+      });
+      setToken(data.token);
+      setUser(data.user);
+      await AsyncStorage.setItem("elibrary.token", data.token);
+      setTab("catalog");
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : "Could not sign in.");
+    }
+  }
+
+  async function saveBase(next: string) {
+    setBase(next);
+    await AsyncStorage.setItem("elibrary.api", next);
+  }
+
+  async function download(book: Book) {
+    setError("");
+    try {
+      const headers = new Headers();
+      if (token) headers.set("Authorization", `Bearer ${token}`);
+      const response = await fetch(`${base}/api/downloads/${book.id}`, { method: "POST", headers });
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data.error || "Download blocked.");
+      }
+      const bytes = new Uint8Array(await response.arrayBuffer());
+      let binary = "";
+      for (let index = 0; index < bytes.length; index += 0x8000) {
+        binary += String.fromCharCode(...bytes.subarray(index, index + 0x8000));
+      }
+      const filename = `${book.title.replace(/[^a-z0-9]+/gi, "-").replace(/^-|-$/g, "") || "book"}.pdf`;
+      const uri = `${FileSystem.cacheDirectory}${filename}`;
+      await FileSystem.writeAsStringAsync(uri, btoa(binary), { encoding: FileSystem.EncodingType.Base64 });
+      if (await Sharing.isAvailableAsync()) await Sharing.shareAsync(uri, { mimeType: "application/pdf" });
+      const next = await request(base, "/api/downloads/quota", token);
+      setQuota(next);
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : "Download failed.");
+    }
+  }
+
+  async function saveBook(book: Book) {
+    if (!token) {
+      setTab("account");
+      return;
+    }
+    await request(base, "/api/user/library", token, { method: "POST", body: JSON.stringify({ bookId: book.id }) });
+    setError(`${book.title} is in My Library.`);
+  }
+
+  async function send(text: string) {
+    const content = text.trim();
+    if (!content || busy) return;
+    const history = [...messages, { role: "user" as const, content }];
+    setMessages(history);
+    setDraft("");
+    setBusy(true);
+    try {
+      const sessionId = (await AsyncStorage.getItem("elibrary.chat")) || `mobile-${Date.now()}`;
+      await AsyncStorage.setItem("elibrary.chat", sessionId);
+      const result = await request(base, "/api/ai/chat", token, {
+        method: "POST",
+        body: JSON.stringify({
+          sessionId,
+          messages: history.map(({ role, content: value }) => ({ role, content: value })),
+        }),
+      });
+      setMessages((current) => [...current, { role: "assistant", content: result.reply, trace: result.toolTrace, pending: result.pendingAction }]);
+    } catch (reason) {
+      setMessages((current) => [...current, { role: "assistant", content: reason instanceof Error ? reason.message : "Unavailable." }]);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function confirm(confirmationId: string, accept: boolean) {
+    setBusy(true);
+    try {
+      const result = await request(base, "/api/ai/confirm", token, {
+        method: "POST",
+        body: JSON.stringify({ confirmationId, accept }),
+      });
+      setMessages((current) => current.map((message) => (
+        message.pending?.confirmationId === confirmationId ? { ...message, pending: null } : message
+      )).concat({ role: "assistant", content: result.reply, trace: result.toolTrace }));
+    } catch (reason) {
+      setMessages((current) => [...current, { role: "assistant", content: reason instanceof Error ? reason.message : "Could not confirm." }]);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const { width: screenWidth } = useWindowDimensions();
+  const columns = screenWidth > 600 ? 3 : 2;
+  const tileGap = 8;
+  const tileWidth = (screenWidth - 32 - tileGap * (columns - 1)) / columns;
+
+  if (!ready) return <View style={styles.center}><ActivityIndicator /></View>;
+
+  return (
+    <SafeAreaView style={styles.screen}>
+      <StatusBar style="dark" />
+      <View style={styles.header}>
+        <Text style={styles.brand}>Mercado Library</Text>
+        <Text style={styles.quota}>{quota ? `${quota.remaining} of ${quota.limit} downloads left` : "Connecting…"}</Text>
+      </View>
+      {error ? <Text style={styles.error}>{error}</Text> : null}
+      {tab === "account" ? (
+        <ScrollView style={styles.flex} contentContainerStyle={styles.body}>
+          <Text style={styles.heading}>{user ? user.name : "Sign in"}</Text>
+          {user ? (
+            <>
+              <Text style={styles.muted}>{user.email} · {user.role}</Text>
+              <Pressable style={styles.ghost} onPress={async () => { setToken(null); setUser(null); await AsyncStorage.removeItem("elibrary.token"); }}>
+                <Text style={styles.ghostText}>Log out</Text>
+              </Pressable>
+            </>
+          ) : (
+            <>
+              <TextInput style={styles.input} autoCapitalize="none" value={email} onChangeText={setEmail} placeholder="Email" />
+              <TextInput style={styles.input} secureTextEntry value={password} onChangeText={setPassword} placeholder="Password" />
+              <Pressable style={styles.solid} onPress={signIn}><Text style={styles.solidText}>Sign in</Text></Pressable>
+            </>
+          )}
+          <Text style={styles.label}>API address</Text>
+          <TextInput style={styles.input} autoCapitalize="none" value={base} onChangeText={saveBase} />
+          <Text style={styles.muted}>Android emulator uses 10.0.2.2. A phone on the same Wi-Fi needs your computer's LAN address, for example http://192.168.1.20:4000.</Text>
+        </ScrollView>
+      ) : selected ? (
+        <ScrollView style={styles.flex} contentContainerStyle={styles.body}>
+          <Pressable onPress={() => setSelected(null)}><Text style={styles.link}>Back to the shelf</Text></Pressable>
+          <View style={styles.cover}>
+            <Text style={styles.coverKicker}>{selected.category}</Text>
+            <Text style={styles.coverTitle}>{selected.title}</Text>
+          </View>
+          <Text style={styles.meta}>{selected.author} · {selected.year}</Text>
+          <Text style={styles.copy}>{selected.description}</Text>
+          <Pressable style={styles.solid} onPress={() => download(selected)}><Text style={styles.solidText}>Download PDF</Text></Pressable>
+          <Pressable style={styles.ghost} onPress={() => saveBook(selected)}><Text style={styles.ghostText}>Add to My Library</Text></Pressable>
+        </ScrollView>
+      ) : (
+        <View style={styles.flex}>
+          {tab === "catalog" && (
+            <TextInput style={styles.search} value={query} onChangeText={setQuery} placeholder="Search title, author, or theme" />
+          )}
+          {!token && tab !== "catalog" ? (
+            <Text style={styles.empty}>Sign in on the Account tab to see this shelf. It uses the same list as the website.</Text>
+          ) : books.length === 0 && tab !== "catalog" ? (
+            <Text style={styles.empty}>Nothing here yet. Ask the librarian to save a book, then confirm it.</Text>
+          ) : books.length === 0 && query.trim() ? (
+            <Text style={styles.empty}>No books match this search.</Text>
+          ) : (
+            <FlatList
+              key={columns}
+              data={books}
+              keyExtractor={(item) => item.id}
+              numColumns={columns}
+              columnWrapperStyle={{ gap: tileGap }}
+              contentContainerStyle={styles.list}
+              renderItem={({ item }) => (
+                <Pressable style={[styles.tile, { width: tileWidth }]} onPress={() => setSelected(item)}>
+                  <View style={styles.tileCover}>
+                    <Text style={styles.tileKicker} numberOfLines={1}>{item.category}</Text>
+                    <Text style={styles.tileTitle} numberOfLines={2}>{item.title}</Text>
+                  </View>
+                  <Text style={styles.tileMeta} numberOfLines={1}>{item.author} · {item.year}</Text>
+                </Pressable>
+              )}
+            />
+          )}
+        </View>
+      )}
+      <View style={styles.footer}>
+        <Pressable style={styles.solid} onPress={() => setChatOpen(true)}>
+          <Text style={styles.solidText}>Ask the librarian</Text>
+        </Pressable>
+        <View style={styles.tabs}>
+          {TABS.map((item) => (
+            <Pressable key={item.id} onPress={() => { setTab(item.id); setSelected(null); }}>
+              <Text style={tab === item.id ? styles.tabOn : styles.tab}>{item.label}</Text>
+            </Pressable>
+          ))}
+        </View>
+      </View>
+      <Modal visible={chatOpen} transparent animationType="slide" onRequestClose={() => setChatOpen(false)}>
+        <View style={styles.sheetWrap}>
+          <Pressable style={styles.backdrop} onPress={() => setChatOpen(false)} />
+          <SafeAreaView style={styles.sheet}>
+            <View style={styles.header}>
+              <Text style={styles.heading}>Librarian</Text>
+              <Pressable onPress={() => setChatOpen(false)}><Text style={styles.link}>Close</Text></Pressable>
+            </View>
+            <ScrollView style={styles.flex} contentContainerStyle={styles.chatLog}>
+              {messages.map((message, index) => (
+                <View key={index} style={styles.message}>
+                  <View style={message.role === "user" ? styles.userBubble : styles.bubble}>
+                    <Text style={message.role === "user" ? styles.userText : styles.bodyText}>{message.content}</Text>
+                  </View>
+                  {message.trace && message.trace.length > 0 ? (
+                    <Text style={styles.trace}>Tools used: {message.trace.map((tool) => tool.name).join(" → ")}</Text>
+                  ) : null}
+                  {message.pending ? (
+                    <View style={styles.row}>
+                      <Text style={styles.bodyText}>Save {message.pending.title}?</Text>
+                      <Pressable style={styles.solid} onPress={() => confirm(message.pending!.confirmationId, true)}><Text style={styles.solidText}>Confirm</Text></Pressable>
+                      <Pressable style={styles.ghost} onPress={() => confirm(message.pending!.confirmationId, false)}><Text style={styles.ghostText}>Cancel</Text></Pressable>
+                    </View>
+                  ) : null}
+                </View>
+              ))}
+            </ScrollView>
+            <View style={styles.prompts}>
+              {SUGGESTIONS.map((prompt) => (
+                <Pressable key={prompt} onPress={() => send(prompt)}>
+                  <Text style={styles.link}>{prompt}</Text>
+                </Pressable>
+              ))}
+            </View>
+            <View style={styles.composer}>
+              <TextInput style={styles.input} value={draft} onChangeText={setDraft} placeholder="Ask about the catalog" />
+              <Pressable style={styles.solid} onPress={() => send(draft)}><Text style={styles.solidText}>{busy ? "..." : "Send"}</Text></Pressable>
+            </View>
+          </SafeAreaView>
+        </View>
+      </Modal>
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  screen: { flex: 1, backgroundColor: "#f3eadc" },
+  flex: { flex: 1 },
+  center: { flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: "#f3eadc" },
+  header: { paddingHorizontal: 16, paddingVertical: 16, flexDirection: "row", justifyContent: "space-between", alignItems: "center", gap: 16 },
+  brand: { fontFamily: SERIF, fontSize: 22, color: "#1c1712" },
+  heading: { fontSize: 24, color: "#1c1712" },
+  quota: { color: "#645c52", fontSize: 13, flexShrink: 1, textAlign: "right" },
+  muted: { color: "#645c52", fontSize: 13 },
+  meta: { color: "#645c52", fontSize: 13, padding: 16 },
+  error: { color: "#8d2f2a", backgroundColor: "#f8efe2", borderColor: "#e7c6c2", borderWidth: 1, borderRadius: 12, marginHorizontal: 16, marginBottom: 16, padding: 16 },
+  empty: { color: "#1c1712", backgroundColor: "#f8efe2", borderColor: "#e2d5c3", borderWidth: 1, borderRadius: 12, margin: 16, padding: 16, fontSize: 15, lineHeight: 22 },
+  body: { padding: 16, gap: 16 },
+  bodyText: { color: "#1c1712", fontSize: 15, lineHeight: 22 },
+  copy: { fontSize: 15, lineHeight: 22, color: "#1c1712" },
+  search: { margin: 16, backgroundColor: "#fff", borderRadius: 8, paddingHorizontal: 16, paddingVertical: 8, borderWidth: 1, borderColor: "#e2d5c3", fontSize: 15 },
+  list: { paddingHorizontal: 16, paddingBottom: 16, gap: 8 },
+  tile: { height: 132, backgroundColor: "#fffaf3", borderRadius: 12, borderWidth: 1, borderColor: "#e2d5c3", overflow: "hidden" },
+  tileCover: { flex: 1, backgroundColor: "#1e4636", padding: 8, justifyContent: "space-between" },
+  tileKicker: { color: "#f6f1e7", fontSize: 11, letterSpacing: 0.6, textTransform: "uppercase" },
+  tileTitle: { fontFamily: SERIF, color: "#f6f1e7", fontSize: 15, lineHeight: 18 },
+  tileMeta: { color: "#645c52", fontSize: 13, lineHeight: 16, paddingHorizontal: 8, paddingVertical: 8 },
+  cover: { backgroundColor: "#1e4636", minHeight: 112, padding: 16, justifyContent: "space-between", gap: 16 },
+  coverKicker: { color: "#f6f1e7", fontSize: 13, letterSpacing: 0.6, textTransform: "uppercase" },
+  coverTitle: { fontFamily: SERIF, color: "#f6f1e7", fontSize: 22 },
+  input: { backgroundColor: "#fff", borderRadius: 8, paddingHorizontal: 16, paddingVertical: 8, borderWidth: 1, borderColor: "#e2d5c3", flex: 1, fontSize: 15, color: "#1c1712" },
+  solid: { backgroundColor: "#1e4636", borderRadius: 8, paddingVertical: 8, paddingHorizontal: 16, alignItems: "center", borderWidth: 1, borderColor: "#1e4636" },
+  solidText: { color: "#f6f1e7", fontSize: 15 },
+  ghost: { borderWidth: 1, borderColor: "#1c1712", borderRadius: 8, paddingVertical: 8, paddingHorizontal: 16, alignItems: "center", backgroundColor: "#fffaf3" },
+  ghostText: { color: "#1c1712", fontSize: 15 },
+  link: { color: "#1e4636", fontSize: 15 },
+  label: { fontSize: 13, color: "#645c52" },
+  footer: { borderTopWidth: 1, borderColor: "#e2d5c3", backgroundColor: "#f3eadc", paddingTop: 16, paddingHorizontal: 16, gap: 16 },
+  tabs: { flexDirection: "row", justifyContent: "space-between", paddingBottom: 8 },
+  tab: { color: "#645c52", fontSize: 13, paddingVertical: 8, borderBottomWidth: 2, borderBottomColor: "transparent" },
+  tabOn: { color: "#1c1712", fontSize: 13, paddingVertical: 8, borderBottomWidth: 2, borderBottomColor: "#1c1712" },
+  sheetWrap: { flex: 1, justifyContent: "flex-end" },
+  backdrop: { flex: 1, backgroundColor: "rgba(28, 23, 18, 0.28)" },
+  sheet: { height: "72%", backgroundColor: "#fffaf3", borderTopLeftRadius: 12, borderTopRightRadius: 12, borderWidth: 1, borderColor: "#e2d5c3" },
+  chatLog: { padding: 16, gap: 16 },
+  message: { gap: 8 },
+  bubble: { backgroundColor: "#f6f0e6", borderRadius: 12, padding: 16 },
+  userBubble: { backgroundColor: "#1e4636", borderRadius: 12, padding: 16, alignSelf: "flex-end" },
+  userText: { color: "#f6f1e7", fontSize: 15, lineHeight: 22 },
+  trace: { color: "#645c52", fontSize: 13, borderWidth: 1, borderColor: "#e2d5c3", borderRadius: 8, padding: 8, backgroundColor: "#fff" },
+  row: { flexDirection: "row", flexWrap: "wrap", gap: 8, alignItems: "center" },
+  prompts: { paddingHorizontal: 16, paddingBottom: 8, gap: 8 },
+  composer: { flexDirection: "row", gap: 8, padding: 16, alignItems: "center", borderTopWidth: 1, borderColor: "#e2d5c3" },
+});

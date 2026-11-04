@@ -1,0 +1,21 @@
+{
+  "name": "mercado-e-library",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Shared E-Library API, web app, and Android client with an embedded catalog assistant.",
+  "workspaces": [
+    "apps/api",
+    "apps/web"
+  ],
+  "scripts": {
+    "dev": "concurrently -n api,web -c blue,green \"npm run dev --prefix apps/api\" \"npm run dev --prefix apps/web\"",
+    "start": "npm start --prefix apps/api",
+    "build": "npm run build --prefix apps/api && npm run build --prefix apps/web",
+    "seed": "npm run seed --prefix apps/api",
+    "setup:mobile": "npm install --prefix apps/mobile",
+    "mobile": "npm start --prefix apps/mobile"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  }
+}

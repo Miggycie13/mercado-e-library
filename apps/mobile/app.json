@@ -1,0 +1,20 @@
+{
+  "expo": {
+    "name": "Mercado Library",
+    "slug": "mercado-e-library",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "android": {
+      "package": "com.mercado.elibrary",
+      "versionCode": 1
+    },
+    "ios": {
+      "bundleIdentifier": "com.mercado.elibrary",
+      "supportsTablet": true
+    },
+    "extra": {
+      "apiUrl": "http://10.0.2.2:4000"
+    }
+  }
+}

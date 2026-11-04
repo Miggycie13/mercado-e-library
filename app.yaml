@@ -1,0 +1,15 @@
+kind: wasmer.io/App.v0
+name: mercado-e-library
+owner: YOUR_WASMER_USERNAME
+package: .
+description: Mercado E-Library API and web client
+debug: true
+env:
+  PORT: "4000"
+  DATABASE_URL: "file:/data/library.db"
+  JWT_SECRET: "change-me-before-deploy"
+  GUEST_DOWNLOAD_LIMIT: "5"
+  USER_DOWNLOAD_LIMIT: "10"
+volumes:
+  - name: library-data
+    mount: /data

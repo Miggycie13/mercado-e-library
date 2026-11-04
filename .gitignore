@@ -1,0 +1,14 @@
+node_modules
+dist
+.expo
+.env
+*.db
+*.db-journal
+apps/api/prisma/dev.db*
+apps/web/dist
+.wasmer
+apps/mobile/.expo
+apps/mobile/android
+apps/mobile/ios
+*.apk
+.DS_Store

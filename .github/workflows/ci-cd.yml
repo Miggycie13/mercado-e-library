@@ -1,0 +1,55 @@
+name: ci-cd
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - name: Seed the catalog
+        working-directory: apps/api
+        env:
+          DATABASE_URL: file:./dev.db
+          JWT_SECRET: ci-secret
+        run: npx tsx src/seed-cli.ts
+
+  docker:
+    needs: build
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: false
+          tags: mercado-e-library:latest
+          load: true
+
+  wasmer:
+    needs: build
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: wasmerio/setup-wasmer@v3
+      - name: Deploy to Wasmer Edge
+        env:
+          WASMER_TOKEN: ${{ secrets.WASMER_TOKEN }}
+        run: |
+          if [ -z "$WASMER_TOKEN" ]; then
+            echo "WASMER_TOKEN is not configured. Skipping Wasmer deploy."
+            exit 0
+          fi
+          wasmer deploy --non-interactive --no-wait

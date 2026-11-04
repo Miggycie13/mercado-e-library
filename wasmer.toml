@@ -1,0 +1,7 @@
+[package]
+name = "YOUR_WASMER_USERNAME/mercado-e-library"
+version = "0.1.0"
+description = "Mercado E-Library shared API, catalog, and embedded librarian"
+license = "MIT"
+
+[dependencies]

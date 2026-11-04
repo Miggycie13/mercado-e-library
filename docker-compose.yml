@@ -1,0 +1,18 @@
+services:
+  library:
+    build: .
+    ports:
+      - "4000:4000"
+    environment:
+      DATABASE_URL: file:/data/library.db
+      WEB_DIST: /app/apps/web/dist
+      JWT_SECRET: ${JWT_SECRET:-change-me-before-deploy}
+      GUEST_DOWNLOAD_LIMIT: "5"
+      USER_DOWNLOAD_LIMIT: "10"
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      PORT: "4000"
+    volumes:
+      - library-data:/data
+
+volumes:
+  library-data:
