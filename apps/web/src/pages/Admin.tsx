@@ -13,12 +13,18 @@ type Analytics = {
 
 const empty = { title: "", author: "", category: "Fiction", year: 1900, description: "", sourceUrl: "" };
 
+function dayLabel(day: string) {
+  const [year, month, date] = day.split("-").map(Number);
+  return new Date(year, month - 1, date).toLocaleDateString(undefined, { month: "short", day: "numeric" });
+}
+
 export function Admin() {
   const { user, ready } = useAuth();
   const [analytics, setAnalytics] = useState<Analytics | null>(null);
   const [books, setBooks] = useState<Book[]>([]);
   const [form, setForm] = useState(empty);
   const [editing, setEditing] = useState<string | null>(null);
+  const [recordQuery, setRecordQuery] = useState("");
   const [error, setError] = useState("");
 
   function load() {
@@ -34,6 +40,8 @@ export function Admin() {
 
   const maxDaily = Math.max(1, ...(analytics?.daily.map((day) => day.downloads) || [1]));
   const maxCategory = Math.max(1, ...(analytics?.byCategory.map((row) => row.count) || [1]));
+  const query = recordQuery.trim().toLowerCase();
+  const visibleBooks = books.filter((book) => !query || `${book.title} ${book.author}`.toLowerCase().includes(query));
 
   async function save(event: React.FormEvent) {
     event.preventDefault();
@@ -79,12 +87,14 @@ export function Admin() {
             </div>
             <div className="panel">
               <h2>Downloads, last 14 days</h2>
-              <div className="bars">
+              <div className="columns">
                 {analytics.daily.map((row) => (
-                  <div className="bar" key={row.day}>
-                    <span>{row.day.slice(5)}</span>
-                    <i style={{ width: `${(row.downloads / maxDaily) * 100}%` }} />
+                  <div className="column" key={row.day}>
                     <span>{row.downloads}</span>
+                    <span className="mark">
+                      <i style={{ height: `${row.downloads === 0 ? 4 : Math.max(12, (row.downloads / maxDaily) * 96)}px` }} />
+                    </span>
+                    <span>{dayLabel(row.day)}</span>
                   </div>
                 ))}
               </div>
@@ -93,9 +103,12 @@ export function Admin() {
           <section className="split">
             <div className="panel">
               <h2>Most downloaded</h2>
-              {analytics.topBooks.length === 0 && <p className="muted">No downloads yet.</p>}
+              {analytics.topBooks.length === 0 && <p className="muted">No books have been downloaded yet.</p>}
               <div className="table-wrap">
                 <table>
+                  <thead>
+                    <tr><th>Title</th><th>Author</th><th>Downloads</th></tr>
+                  </thead>
                   <tbody>
                     {analytics.topBooks.map((book) => (
                       <tr key={book.id}><td>{book.title}</td><td>{book.author}</td><td>{book.downloads}</td></tr>
@@ -106,8 +119,12 @@ export function Admin() {
             </div>
             <div className="panel">
               <h2>Recent downloads</h2>
+              {analytics.recentDownloads.length === 0 && <p className="muted">No downloads have been recorded yet.</p>}
               <div className="table-wrap">
                 <table>
+                  <thead>
+                    <tr><th>Title</th><th>Reader</th><th>When</th></tr>
+                  </thead>
                   <tbody>
                     {analytics.recentDownloads.map((row) => (
                       <tr key={row.id}><td>{row.title}</td><td>{row.reader}</td><td>{new Date(row.at).toLocaleString()}</td></tr>
@@ -135,9 +152,14 @@ export function Admin() {
         </form>
         <div className="panel admin-list">
           <h2>Catalog records</h2>
-          {books.map((book) => (
+          <input className="record-search" value={recordQuery} onChange={(event) => setRecordQuery(event.target.value)} placeholder="Search title or author" aria-label="Search catalog records" />
+          {query && visibleBooks.length === 0 && <p className="muted">No records match this search.</p>}
+          {visibleBooks.map((book) => (
             <div key={book.id} className="row-actions">
-              <span className="row-title">{book.title}</span>
+              <span className="row-copy">
+                <span className="row-title">{book.title}</span>
+                <span className="row-author">{book.author}</span>
+              </span>
               <button className="textish" onClick={() => { setEditing(book.id); setForm({ title: book.title, author: book.author, category: book.category, year: book.year, description: book.description, sourceUrl: book.sourceUrl || "" }); }}>Edit</button>
               <button className="textish" onClick={async () => { await api(`/api/admin/books/${book.id}`, { method: "DELETE" }); load(); }}>Delete</button>
             </div>

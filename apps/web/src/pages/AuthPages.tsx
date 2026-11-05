@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Navigate, useNavigate } from "react-router-dom";
+import { Link, Navigate, useNavigate } from "react-router-dom";
 import { useAuth } from "../auth";
 
 export function LoginPage() {
@@ -24,13 +24,17 @@ export function LoginPage() {
     }}>
       <h1>Sign in</h1>
       <p className="muted">Reader: reader@elibrary.local / Reader123! · Admin: admin@elibrary.local / Admin123!</p>
-      <div className="fields">
+      <label className="field">
+        <span>Email</span>
         <input value={email} onChange={(event) => setEmail(event.target.value)} type="email" aria-label="Email" required />
+      </label>
+      <label className="field">
+        <span>Password</span>
         <input value={password} onChange={(event) => setPassword(event.target.value)} type="password" aria-label="Password" required />
-      </div>
+      </label>
       {error && <p className="error">{error}</p>}
       <button className="solid" type="submit">Sign in</button>
-      <a className="textish" href="/register">Create an account</a>
+      <Link className="textish" to="/register">Create an account</Link>
     </form>
   );
 }
@@ -57,14 +61,21 @@ export function RegisterPage() {
       }
     }}>
       <h1>Create an account</h1>
-      <p className="muted">Registered readers can download 10 books and sync My Library across web and Android.</p>
-      <div className="fields">
-        <input value={name} onChange={(event) => setName(event.target.value)} placeholder="Name" aria-label="Name" required />
-        <input value={email} onChange={(event) => setEmail(event.target.value)} type="email" placeholder="Email" aria-label="Email" required />
-        <input value={password} onChange={(event) => setPassword(event.target.value)} type="password" placeholder="Password" aria-label="Password" required />
-      </div>
+      <label className="field">
+        <span>Name</span>
+        <input value={name} onChange={(event) => setName(event.target.value)} aria-label="Name" required />
+      </label>
+      <label className="field">
+        <span>Email</span>
+        <input value={email} onChange={(event) => setEmail(event.target.value)} type="email" aria-label="Email" required />
+      </label>
+      <label className="field">
+        <span>Password</span>
+        <input value={password} onChange={(event) => setPassword(event.target.value)} type="password" aria-label="Password" required />
+      </label>
       {error && <p className="error">{error}</p>}
       <button className="solid" type="submit">Create account</button>
+      <Link className="textish" to="/login">Sign in</Link>
     </form>
   );
 }

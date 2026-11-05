@@ -35,10 +35,20 @@ const TABS: Array<{ id: Tab; label: string }> = [
   { id: "account", label: "Account" },
 ];
 const SUGGESTIONS = [
-  "Recommend a sea adventure and tell me about the closest match",
-  "Compare Dracula and Frankenstein",
-  "Add Treasure Island to my library",
+  { label: "A sea adventure", text: "Recommend a sea adventure and tell me about the closest match" },
+  { label: "Dracula and Frankenstein", text: "Compare Dracula and Frankenstein" },
+  { label: "Save Treasure Island", text: "Add Treasure Island to my library" },
 ];
+const TOOL_LABELS: Record<string, string> = {
+  search_books: "Search",
+  get_book_details: "Details",
+  add_to_my_library: "Save",
+  compare_books: "Compare",
+};
+
+function toolLabel(name: string) {
+  return TOOL_LABELS[name] ?? "Search";
+}
 
 async function request(base: string, path: string, token: string | null, options: RequestInit = {}) {
   const headers = new Headers(options.headers);
@@ -61,14 +71,17 @@ export default function App() {
   const [selected, setSelected] = useState<Book | null>(null);
   const [quota, setQuota] = useState<Quota | null>(null);
   const [error, setError] = useState("");
+  const [accountMode, setAccountMode] = useState<"sign-in" | "register">("sign-in");
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("reader@elibrary.local");
   const [password, setPassword] = useState("Reader123!");
+  const [note, setNote] = useState("");
   const [chatOpen, setChatOpen] = useState(false);
   const [draft, setDraft] = useState("");
   const [busy, setBusy] = useState(false);
   const [messages, setMessages] = useState<Message[]>([{
     role: "assistant",
-    content: "Ask me about the live catalog. I will ask before I save a book to My Library.",
+    content: "Ask about a book. I will ask before I save one.",
   }]);
 
   useEffect(() => {
@@ -131,6 +144,36 @@ export default function App() {
     }
   }
 
+  async function register() {
+    setError("");
+    try {
+      const data = await request(base, "/api/auth/register", null, {
+        method: "POST",
+        body: JSON.stringify({ name, email, password }),
+      });
+      setToken(data.token);
+      setUser(data.user);
+      await AsyncStorage.setItem("elibrary.token", data.token);
+      setTab("catalog");
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : "Could not create the account.");
+    }
+  }
+
+  async function signOut() {
+    setError("");
+    try {
+      await request(base, "/api/auth/logout", token, { method: "POST" });
+    } catch {
+      // The token is still cleared so the next visit is a guest.
+    }
+    setToken(null);
+    setUser(null);
+    setSelected(null);
+    await AsyncStorage.removeItem("elibrary.token");
+    setTab("catalog");
+  }
+
   async function saveBase(next: string) {
     setBase(next);
     await AsyncStorage.setItem("elibrary.api", next);
@@ -155,6 +198,7 @@ export default function App() {
       const uri = `${FileSystem.cacheDirectory}${filename}`;
       await FileSystem.writeAsStringAsync(uri, btoa(binary), { encoding: FileSystem.EncodingType.Base64 });
       if (await Sharing.isAvailableAsync()) await Sharing.shareAsync(uri, { mimeType: "application/pdf" });
+      setNote("Download started.");
       const next = await request(base, "/api/downloads/quota", token);
       setQuota(next);
     } catch (reason) {
@@ -164,11 +208,18 @@ export default function App() {
 
   async function saveBook(book: Book) {
     if (!token) {
+      setSelected(null);
       setTab("account");
       return;
     }
-    await request(base, "/api/user/library", token, { method: "POST", body: JSON.stringify({ bookId: book.id }) });
-    setError(`${book.title} is in My Library.`);
+    setError("");
+    try {
+      await request(base, "/api/user/library", token, { method: "POST", body: JSON.stringify({ bookId: book.id }) });
+      setNote("Saved.");
+    } catch (reason) {
+      setNote("");
+      setError(reason instanceof Error ? reason.message : "Could not update your shelf.");
+    }
   }
 
   async function send(text: string) {
@@ -230,44 +281,85 @@ export default function App() {
       {error ? <Text style={styles.error}>{error}</Text> : null}
       {tab === "account" ? (
         <ScrollView style={styles.flex} contentContainerStyle={styles.body}>
-          <Text style={styles.heading}>{user ? user.name : "Sign in"}</Text>
-          {user ? (
-            <>
-              <Text style={styles.muted}>{user.email} · {user.role}</Text>
-              <Pressable style={styles.ghost} onPress={async () => { setToken(null); setUser(null); await AsyncStorage.removeItem("elibrary.token"); }}>
-                <Text style={styles.ghostText}>Log out</Text>
-              </Pressable>
-            </>
-          ) : (
-            <>
-              <TextInput style={styles.input} autoCapitalize="none" value={email} onChangeText={setEmail} placeholder="Email" />
-              <TextInput style={styles.input} secureTextEntry value={password} onChangeText={setPassword} placeholder="Password" />
-              <Pressable style={styles.solid} onPress={signIn}><Text style={styles.solidText}>Sign in</Text></Pressable>
-            </>
-          )}
-          <Text style={styles.label}>API address</Text>
-          <TextInput style={styles.input} autoCapitalize="none" value={base} onChangeText={saveBase} />
-          <Text style={styles.muted}>Android emulator uses 10.0.2.2. A phone on the same Wi-Fi needs your computer's LAN address, for example http://192.168.1.20:4000.</Text>
+          <View style={styles.form}>
+            {user ? (
+              <>
+                <Text style={styles.heading}>{user.name}</Text>
+                <Text style={styles.muted}>{user.email}</Text>
+                <Pressable onPress={signOut}><Text style={styles.link}>Log out</Text></Pressable>
+              </>
+            ) : accountMode === "register" ? (
+              <>
+                <Text style={styles.heading}>Create an account</Text>
+                <View style={styles.field}>
+                  <Text style={styles.label}>Name</Text>
+                  <TextInput style={styles.accountInput} value={name} onChangeText={setName} autoCapitalize="words" />
+                </View>
+                <View style={styles.field}>
+                  <Text style={styles.label}>Email</Text>
+                  <TextInput style={styles.accountInput} autoCapitalize="none" value={email} onChangeText={setEmail} />
+                </View>
+                <View style={styles.field}>
+                  <Text style={styles.label}>Password</Text>
+                  <TextInput style={styles.accountInput} secureTextEntry value={password} onChangeText={setPassword} />
+                </View>
+                <Pressable style={styles.solid} onPress={register}><Text style={styles.solidText}>Create account</Text></Pressable>
+                <Pressable onPress={() => { setAccountMode("sign-in"); setError(""); setEmail("reader@elibrary.local"); setPassword("Reader123!"); }}>
+                  <Text style={styles.link}>Sign in</Text>
+                </Pressable>
+              </>
+            ) : (
+              <>
+                <Text style={styles.heading}>Sign in</Text>
+                <Text style={styles.muted}>Reader: reader@elibrary.local / Reader123! · Admin: admin@elibrary.local / Admin123!</Text>
+                <View style={styles.field}>
+                  <Text style={styles.label}>Email</Text>
+                  <TextInput style={styles.accountInput} autoCapitalize="none" value={email} onChangeText={setEmail} />
+                </View>
+                <View style={styles.field}>
+                  <Text style={styles.label}>Password</Text>
+                  <TextInput style={styles.accountInput} secureTextEntry value={password} onChangeText={setPassword} />
+                </View>
+                <Pressable style={styles.solid} onPress={signIn}><Text style={styles.solidText}>Sign in</Text></Pressable>
+                <Pressable onPress={() => { setAccountMode("register"); setError(""); setName(""); setEmail(""); setPassword(""); }}>
+                  <Text style={styles.link}>Create an account</Text>
+                </Pressable>
+              </>
+            )}
+            <View style={styles.field}>
+              <Text style={styles.label}>API address</Text>
+              <TextInput style={styles.accountInput} autoCapitalize="none" value={base} onChangeText={saveBase} />
+            </View>
+            <Text style={styles.muted}>The emulator uses 10.0.2.2, and a phone on the same Wi-Fi uses the computer's LAN address.</Text>
+          </View>
         </ScrollView>
       ) : selected ? (
         <ScrollView style={styles.flex} contentContainerStyle={styles.body}>
-          <Pressable onPress={() => setSelected(null)}><Text style={styles.link}>Back to the shelf</Text></Pressable>
+          <Pressable onPress={() => { setNote(""); setSelected(null); }}><Text style={styles.link}>Back to the shelf</Text></Pressable>
           <View style={styles.cover}>
             <Text style={styles.coverKicker}>{selected.category}</Text>
             <Text style={styles.coverTitle}>{selected.title}</Text>
           </View>
           <Text style={styles.meta}>{selected.author} · {selected.year}</Text>
           <Text style={styles.copy}>{selected.description}</Text>
+          {note ? <Text style={styles.note}>{note}</Text> : null}
           <Pressable style={styles.solid} onPress={() => download(selected)}><Text style={styles.solidText}>Download PDF</Text></Pressable>
-          <Pressable style={styles.ghost} onPress={() => saveBook(selected)}><Text style={styles.ghostText}>Add to My Library</Text></Pressable>
+          {token ? (
+            <Pressable onPress={() => saveBook(selected)}><Text style={styles.link}>Add to My Library</Text></Pressable>
+          ) : (
+            <Pressable onPress={() => { setNote(""); setSelected(null); setTab("account"); }}><Text style={styles.link}>Sign in to save this book</Text></Pressable>
+          )}
         </ScrollView>
       ) : (
         <View style={styles.flex}>
           {tab === "catalog" && (
-            <TextInput style={styles.search} value={query} onChangeText={setQuery} placeholder="Search title, author, or theme" />
+            <View style={styles.catalogHead}>
+              <Text style={styles.pageTitle}>Catalog</Text>
+              <TextInput style={[styles.search, styles.searchFlush]} value={query} onChangeText={setQuery} placeholder="Search title, author, or theme" placeholderTextColor="#645c52" />
+            </View>
           )}
           {!token && tab !== "catalog" ? (
-            <Text style={styles.empty}>Sign in on the Account tab to see this shelf. It uses the same list as the website.</Text>
+            <Text style={styles.empty} onPress={() => setTab("account")}>Sign in to see this shelf.</Text>
           ) : books.length === 0 && tab !== "catalog" ? (
             <Text style={styles.empty}>Nothing here yet. Ask the librarian to save a book, then confirm it.</Text>
           ) : books.length === 0 && query.trim() ? (
@@ -281,7 +373,7 @@ export default function App() {
               columnWrapperStyle={{ gap: tileGap }}
               contentContainerStyle={styles.list}
               renderItem={({ item }) => (
-                <Pressable style={[styles.tile, { width: tileWidth }]} onPress={() => setSelected(item)}>
+                <Pressable style={[styles.tile, { width: tileWidth }]} onPress={() => { setNote(""); setSelected(item); }}>
                   <View style={styles.tileCover}>
                     <Text style={styles.tileKicker} numberOfLines={1}>{item.category}</Text>
                     <Text style={styles.tileTitle} numberOfLines={2}>{item.title}</Text>
@@ -320,7 +412,7 @@ export default function App() {
                     <Text style={message.role === "user" ? styles.userText : styles.bodyText}>{message.content}</Text>
                   </View>
                   {message.trace && message.trace.length > 0 ? (
-                    <Text style={styles.trace}>Tools used: {message.trace.map((tool) => tool.name).join(" → ")}</Text>
+                    <Text style={styles.trace}>Tools used: {message.trace.map((tool) => toolLabel(tool.name)).join(" → ")}</Text>
                   ) : null}
                   {message.pending ? (
                     <View style={styles.row}>
@@ -332,15 +424,17 @@ export default function App() {
                 </View>
               ))}
             </ScrollView>
-            <View style={styles.prompts}>
-              {SUGGESTIONS.map((prompt) => (
-                <Pressable key={prompt} onPress={() => send(prompt)}>
-                  <Text style={styles.link}>{prompt}</Text>
-                </Pressable>
-              ))}
-            </View>
+            {messages.length < 2 && (
+              <View style={styles.prompts}>
+                {SUGGESTIONS.map((prompt) => (
+                  <Pressable key={prompt.label} onPress={() => send(prompt.text)}>
+                    <Text style={styles.link}>{prompt.label}</Text>
+                  </Pressable>
+                ))}
+              </View>
+            )}
             <View style={styles.composer}>
-              <TextInput style={styles.input} value={draft} onChangeText={setDraft} placeholder="Ask about the catalog" />
+              <TextInput style={styles.input} value={draft} onChangeText={setDraft} placeholder="Ask about the catalog" placeholderTextColor="#645c52" />
               <Pressable style={styles.solid} onPress={() => send(draft)}><Text style={styles.solidText}>{busy ? "..." : "Send"}</Text></Pressable>
             </View>
           </SafeAreaView>
@@ -355,32 +449,39 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
   center: { flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: "#f3eadc" },
   header: { paddingHorizontal: 16, paddingVertical: 16, flexDirection: "row", justifyContent: "space-between", alignItems: "center", gap: 16 },
-  brand: { fontFamily: SERIF, fontSize: 22, color: "#1c1712" },
+  brand: { fontFamily: SERIF, fontSize: 22, fontWeight: "500", color: "#1c1712" },
   heading: { fontSize: 24, color: "#1c1712" },
+  pageTitle: { fontFamily: SERIF, fontWeight: "500", fontSize: 22, color: "#1c1712" },
+  catalogHead: { paddingHorizontal: 16, paddingTop: 16, paddingBottom: 16, gap: 8 },
+  searchFlush: { margin: 0 },
+  form: { width: "100%", maxWidth: 448, gap: 16 },
+  field: { gap: 8 },
+  accountInput: { backgroundColor: "#fffaf3", borderRadius: 8, paddingHorizontal: 16, paddingVertical: 8, borderWidth: 1, borderColor: "#e2d5c3", fontSize: 15, color: "#1c1712" },
+  note: { color: "#645c52", fontSize: 13 },
   quota: { color: "#645c52", fontSize: 13, flexShrink: 1, textAlign: "right" },
   muted: { color: "#645c52", fontSize: 13 },
   meta: { color: "#645c52", fontSize: 13, padding: 16 },
-  error: { color: "#8d2f2a", backgroundColor: "#f8efe2", borderColor: "#e7c6c2", borderWidth: 1, borderRadius: 12, marginHorizontal: 16, marginBottom: 16, padding: 16 },
-  empty: { color: "#1c1712", backgroundColor: "#f8efe2", borderColor: "#e2d5c3", borderWidth: 1, borderRadius: 12, margin: 16, padding: 16, fontSize: 15, lineHeight: 22 },
+  error: { color: "#8d2f2a", backgroundColor: "#fffaf3", borderColor: "#e7c6c2", borderWidth: 1, borderRadius: 12, marginHorizontal: 16, marginBottom: 16, padding: 16 },
+  empty: { color: "#1c1712", backgroundColor: "#fffaf3", borderColor: "#e2d5c3", borderWidth: 1, borderRadius: 12, margin: 16, padding: 16, fontSize: 15, lineHeight: 22 },
   body: { padding: 16, gap: 16 },
   bodyText: { color: "#1c1712", fontSize: 15, lineHeight: 22 },
   copy: { fontSize: 15, lineHeight: 22, color: "#1c1712" },
-  search: { margin: 16, backgroundColor: "#fff", borderRadius: 8, paddingHorizontal: 16, paddingVertical: 8, borderWidth: 1, borderColor: "#e2d5c3", fontSize: 15 },
+  search: { margin: 16, backgroundColor: "#fffaf3", borderRadius: 8, paddingHorizontal: 16, paddingVertical: 8, borderWidth: 1, borderColor: "#e2d5c3", fontSize: 15, color: "#1c1712" },
   list: { paddingHorizontal: 16, paddingBottom: 16, gap: 8 },
   tile: { height: 132, backgroundColor: "#fffaf3", borderRadius: 12, borderWidth: 1, borderColor: "#e2d5c3", overflow: "hidden" },
   tileCover: { flex: 1, backgroundColor: "#1e4636", padding: 8, justifyContent: "space-between" },
   tileKicker: { color: "#f6f1e7", fontSize: 11, letterSpacing: 0.6, textTransform: "uppercase" },
-  tileTitle: { fontFamily: SERIF, color: "#f6f1e7", fontSize: 15, lineHeight: 18 },
+  tileTitle: { fontFamily: SERIF, fontWeight: "500", color: "#f6f1e7", fontSize: 15, lineHeight: 18 },
   tileMeta: { color: "#645c52", fontSize: 13, lineHeight: 16, paddingHorizontal: 8, paddingVertical: 8 },
-  cover: { backgroundColor: "#1e4636", minHeight: 112, padding: 16, justifyContent: "space-between", gap: 16 },
+  cover: { backgroundColor: "#1e4636", minHeight: 200, padding: 16, justifyContent: "space-between", gap: 16 },
   coverKicker: { color: "#f6f1e7", fontSize: 13, letterSpacing: 0.6, textTransform: "uppercase" },
-  coverTitle: { fontFamily: SERIF, color: "#f6f1e7", fontSize: 22 },
-  input: { backgroundColor: "#fff", borderRadius: 8, paddingHorizontal: 16, paddingVertical: 8, borderWidth: 1, borderColor: "#e2d5c3", flex: 1, fontSize: 15, color: "#1c1712" },
+  coverTitle: { fontFamily: SERIF, fontWeight: "500", color: "#f6f1e7", fontSize: 22 },
+  input: { backgroundColor: "#fffaf3", borderRadius: 8, paddingHorizontal: 16, paddingVertical: 8, borderWidth: 1, borderColor: "#e2d5c3", flex: 1, fontSize: 15, color: "#1c1712" },
   solid: { backgroundColor: "#1e4636", borderRadius: 8, paddingVertical: 8, paddingHorizontal: 16, alignItems: "center", borderWidth: 1, borderColor: "#1e4636" },
   solidText: { color: "#f6f1e7", fontSize: 15 },
   ghost: { borderWidth: 1, borderColor: "#1c1712", borderRadius: 8, paddingVertical: 8, paddingHorizontal: 16, alignItems: "center", backgroundColor: "#fffaf3" },
   ghostText: { color: "#1c1712", fontSize: 15 },
-  link: { color: "#1e4636", fontSize: 15 },
+  link: { color: "#1c1712", fontSize: 15, textDecorationLine: "underline" },
   label: { fontSize: 13, color: "#645c52" },
   footer: { borderTopWidth: 1, borderColor: "#e2d5c3", backgroundColor: "#f3eadc", paddingTop: 16, paddingHorizontal: 16, gap: 16 },
   tabs: { flexDirection: "row", justifyContent: "space-between", paddingBottom: 8 },
@@ -391,10 +492,10 @@ const styles = StyleSheet.create({
   sheet: { height: "72%", backgroundColor: "#fffaf3", borderTopLeftRadius: 12, borderTopRightRadius: 12, borderWidth: 1, borderColor: "#e2d5c3" },
   chatLog: { padding: 16, gap: 16 },
   message: { gap: 8 },
-  bubble: { backgroundColor: "#f6f0e6", borderRadius: 12, padding: 16 },
+  bubble: { backgroundColor: "#fffaf3", borderRadius: 12, padding: 16, borderWidth: 1, borderColor: "#e2d5c3" },
   userBubble: { backgroundColor: "#1e4636", borderRadius: 12, padding: 16, alignSelf: "flex-end" },
   userText: { color: "#f6f1e7", fontSize: 15, lineHeight: 22 },
-  trace: { color: "#645c52", fontSize: 13, borderWidth: 1, borderColor: "#e2d5c3", borderRadius: 8, padding: 8, backgroundColor: "#fff" },
+  trace: { color: "#645c52", fontSize: 13, borderWidth: 1, borderColor: "#e2d5c3", borderRadius: 8, padding: 8, backgroundColor: "#fffaf3" },
   row: { flexDirection: "row", flexWrap: "wrap", gap: 8, alignItems: "center" },
   prompts: { paddingHorizontal: 16, paddingBottom: 8, gap: 8 },
   composer: { flexDirection: "row", gap: 8, padding: 16, alignItems: "center", borderTopWidth: 1, borderColor: "#e2d5c3" },

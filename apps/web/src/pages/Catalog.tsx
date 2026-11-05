@@ -67,17 +67,8 @@ export function Catalog() {
   const pages = data ? Math.max(1, Math.ceil(data.total / data.pageSize)) : 1;
 
   return (
-    <>
-      <section className="hero">
-        <div className="stack">
-          <h1>A shared shelf of public-domain books.</h1>
-          <p>Search the catalog, keep a library, and ask the librarian. Guests can download 5 books. An account raises that to 10. The limit is enforced by the server.</p>
-        </div>
-        <div className="panel">
-          <strong>{data?.total ?? "…"} records</strong>
-          <p className="muted">Downloads are original bibliographic cards, with a Project Gutenberg link when one is stored.</p>
-        </div>
-      </section>
+    <div className="stack">
+      <h1 className="catalog-title">Catalog</h1>
       <div className="filters">
         <input value={query} onChange={(event) => { setQuery(event.target.value); setPage(1); }} placeholder="Search title, author, or theme" aria-label="Search books" />
         <select value={category} onChange={(event) => { setCategory(event.target.value); setPage(1); }} aria-label="Category">
@@ -100,6 +91,6 @@ export function Catalog() {
         <span className="muted">Page {page} of {pages}</span>
         <button className="ghost" disabled={page >= pages} onClick={() => setPage((value) => value + 1)}>Next</button>
       </div>
-    </>
+    </div>
   );
 }

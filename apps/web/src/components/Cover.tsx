@@ -1,8 +1,8 @@
-export function Cover({ title, category }: { title: string; category: string }) {
+export function Cover({ title, category }: { title?: string; category: string }) {
   return (
     <div className="cover">
       <span>{category}</span>
-      <strong>{title}</strong>
+      {title ? <strong>{title}</strong> : null}
     </div>
   );
 }

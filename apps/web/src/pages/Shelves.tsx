@@ -24,19 +24,21 @@ export function Shelf({ kind }: { kind: "library" | "favorites" }) {
   if (!user) return <p className="empty">Sign in to see {title}. Your shelf is stored on the shared server, so the Android app reads the same list. <Link to="/login">Sign in</Link></p>;
 
   return (
-    <>
+    <div className="stack">
       <h1>{title}</h1>
-      <p className="muted">{books.length} saved {books.length === 1 ? "book" : "books"}.</p>
       {error && <p className="error">{error}</p>}
-      <div className="grid">
-        {books.map((book) => (
-          <Link className="book" key={book.id} to={`/books/${book.id}`}>
-            <Cover title={book.title} category={book.category} />
-            <div className="meta">{book.author} · {book.year}</div>
-          </Link>
-        ))}
-      </div>
-      {books.length === 0 && <p className="empty">Nothing here yet. Ask the librarian to save a book, then confirm it.</p>}
-    </>
+      {books.length === 0 ? (
+        <p className="empty">Nothing here yet. Ask the librarian to save a book, then confirm it.</p>
+      ) : (
+        <div className="grid">
+          {books.map((book) => (
+            <Link className="book" key={book.id} to={`/books/${book.id}`}>
+              <Cover title={book.title} category={book.category} />
+              <div className="meta">{book.author} · {book.year}</div>
+            </Link>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }

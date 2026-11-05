@@ -48,26 +48,25 @@ export function BookPage() {
     <article className="detail">
       <Cover title={book.title} category={book.category} />
       <div className="detail-copy">
-        <p className="meta">{book.category} · {book.language}</p>
         <h1 className="book-title">{book.title}</h1>
         <p>{book.author} · {book.year}</p>
         <p>{book.description}</p>
-        {book.sourceUrl && <p><a href={book.sourceUrl} target="_blank" rel="noreferrer">View the public-domain source</a></p>}
+        {book.sourceUrl && <p><a className="textish" href={book.sourceUrl} target="_blank" rel="noreferrer">View the public-domain source</a></p>}
         {error && <p className="error">{error}</p>}
-        {note && <p className="notice">{note}</p>}
+        {note && <p className="muted">{note}</p>}
         <div className="actions">
           <button className="solid" onClick={download}>Download PDF</button>
           {user ? (
             <>
-              <button className="ghost" onClick={() => act(book.inLibrary ? `/api/user/library/${book.id}` : "/api/user/library", book.inLibrary ? "DELETE" : "POST")}>
+              <button className="textish" onClick={() => act(book.inLibrary ? `/api/user/library/${book.id}` : "/api/user/library", book.inLibrary ? "DELETE" : "POST")}>
                 {book.inLibrary ? "Remove from My Library" : "Add to My Library"}
               </button>
-              <button className="ghost" onClick={() => act(book.isFavorite ? `/api/user/favorites/${book.id}` : "/api/user/favorites", book.isFavorite ? "DELETE" : "POST")}>
+              <button className="textish" onClick={() => act(book.isFavorite ? `/api/user/favorites/${book.id}` : "/api/user/favorites", book.isFavorite ? "DELETE" : "POST")}>
                 {book.isFavorite ? "Unfavorite" : "Favorite"}
               </button>
             </>
           ) : (
-            <Link className="ghost" to="/login">Sign in to save this book</Link>
+            <Link className="textish" to="/login">Sign in to save this book</Link>
           )}
         </div>
       </div>

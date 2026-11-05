@@ -5,10 +5,21 @@ import { useAuth } from "../auth";
 type Message = { role: "user" | "assistant"; content: string; trace?: ChatResponse["toolTrace"]; pending?: ChatResponse["pendingAction"] };
 
 const SUGGESTIONS = [
-  "Recommend a sea adventure and tell me about the closest match",
-  "Compare Dracula and Frankenstein",
-  "Add Treasure Island to my library",
+  { label: "A sea adventure", text: "Recommend a sea adventure and tell me about the closest match" },
+  { label: "Dracula and Frankenstein", text: "Compare Dracula and Frankenstein" },
+  { label: "Save Treasure Island", text: "Add Treasure Island to my library" },
 ];
+
+const TOOL_LABELS: Record<string, string> = {
+  search_books: "Search",
+  get_book_details: "Details",
+  add_to_my_library: "Save",
+  compare_books: "Compare",
+};
+
+function toolLabel(name: string) {
+  return TOOL_LABELS[name] ?? "Search";
+}
 
 function sessionId() {
   const existing = localStorage.getItem("elibrary.chat");
@@ -25,7 +36,7 @@ export function ChatDock() {
   const [busy, setBusy] = useState(false);
   const [messages, setMessages] = useState<Message[]>([{
     role: "assistant",
-    content: "I am the librarian inside this library. I search the live catalog, and I will ask before I save anything to My Library.",
+    content: "Ask about a book. I will ask before I save one.",
   }]);
 
   async function send(text: string) {
@@ -88,7 +99,7 @@ export function ChatDock() {
                 <div className={`bubble ${message.role}`}>{message.content}</div>
                 {message.trace && message.trace.length > 0 && (
                   <div className="trace">
-                    Tools used: {message.trace.map((tool) => tool.name).join(" → ")}
+                    Tools used: {message.trace.map((tool) => toolLabel(tool.name)).join(" → ")}
                   </div>
                 )}
                 {message.pending && (
@@ -101,10 +112,10 @@ export function ChatDock() {
               </article>
             ))}
           </div>
-          {messages.length < 3 && (
+          {messages.length < 2 && (
             <div className="prompts">
               {SUGGESTIONS.map((prompt) => (
-                <button key={prompt} className="textish" onClick={() => send(prompt)}>{prompt}</button>
+                <button key={prompt.label} className="textish" onClick={() => send(prompt.text)}>{prompt.label}</button>
               ))}
             </div>
           )}
