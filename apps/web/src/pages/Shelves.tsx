@@ -7,8 +7,13 @@ import { Cover } from "../components/Cover";
 export function Shelf({ kind }: { kind: "library" | "favorites" }) {
   const { user, ready } = useAuth();
   const [books, setBooks] = useState<Book[]>([]);
+  const [query, setQuery] = useState("");
   const [error, setError] = useState("");
   const title = kind === "library" ? "My Library" : "Favorites";
+  const needle = query.trim().toLowerCase();
+  const visible = needle
+    ? books.filter((book) => `${book.title} ${book.author} ${book.category}`.toLowerCase().includes(needle))
+    : books;
 
   useEffect(() => {
     if (!user) return;
@@ -30,14 +35,23 @@ export function Shelf({ kind }: { kind: "library" | "favorites" }) {
       {books.length === 0 ? (
         <p className="empty">Nothing here yet. Ask the librarian to save a book, then confirm it.</p>
       ) : (
-        <div className="grid">
-          {books.map((book) => (
-            <Link className="book" key={book.id} to={`/books/${book.id}`}>
-              <Cover title={book.title} category={book.category} />
-              <div className="meta">{book.author} · {book.year}</div>
-            </Link>
-          ))}
-        </div>
+        <>
+          <div className="filters">
+            <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search title, author, or theme" aria-label="Search books" />
+          </div>
+          {visible.length === 0 ? (
+            <p className="notice">No books match this search.</p>
+          ) : (
+            <div className="grid">
+              {visible.map((book) => (
+                <Link className="book" key={book.id} to={`/books/${book.id}`}>
+                  <Cover title={book.title} category={book.category} />
+                  <div className="meta">{book.author} · {book.year}</div>
+                </Link>
+              ))}
+            </div>
+          )}
+        </>
       )}
     </div>
   );
