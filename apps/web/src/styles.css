@@ -81,7 +81,7 @@ button:disabled { opacity: 0.45; cursor: not-allowed; }
 }
 .panel, .stat, .detail, .form-card { padding: 16px; }
 .panel { display: grid; gap: 16px; }
-.form-card { max-width: 28rem; display: grid; gap: 16px; }
+.form-card { max-width: 28rem; margin-inline: auto; display: grid; gap: 16px; }
 .fields { display: grid; gap: 16px; }
 .fields p { margin: 0; }
 .stack { display: grid; gap: 16px; }

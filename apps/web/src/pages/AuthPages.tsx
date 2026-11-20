@@ -23,7 +23,7 @@ export function LoginPage() {
       }
     }}>
       <h1>Sign in</h1>
-      <p className="muted">Reader: reader@elibrary.local / Reader123! · Admin: admin@elibrary.local / Admin123!</p>
+      <p className="muted">Reader: reader@elibrary.local / Reader123!<br />Admin: admin@elibrary.local / Admin123!</p>
       <label className="field">
         <span>Email</span>
         <input value={email} onChange={(event) => setEmail(event.target.value)} type="email" aria-label="Email" required />
