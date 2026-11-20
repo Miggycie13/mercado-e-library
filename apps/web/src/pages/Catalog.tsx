@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { api, type Book } from "../api";
 import { Cover } from "../components/Cover";
 
@@ -7,10 +7,29 @@ type CatalogResponse = { total: number; page: number; pageSize: number; books: B
 
 const CATALOG_ERROR = "The catalog could not be loaded. The API on port 4000 is not responding.";
 
+function readPage(params: URLSearchParams) {
+  const value = Number(params.get("page"));
+  return Number.isInteger(value) && value >= 1 ? value : 1;
+}
+
+function pageItems(current: number, total: number) {
+  const shown = new Set([1, total, current - 1, current, current + 1].filter((item) => item >= 1 && item <= total));
+  const items: Array<number | "gap"> = [];
+  let previous = 0;
+  for (const item of [...shown].sort((left, right) => left - right)) {
+    if (previous && item - previous > 1) items.push("gap");
+    items.push(item);
+    previous = item;
+  }
+  return items;
+}
+
 export function Catalog() {
-  const [query, setQuery] = useState("");
-  const [category, setCategory] = useState("");
-  const [page, setPage] = useState(1);
+  const [params, setParams] = useSearchParams();
+  const query = params.get("q") ?? "";
+  const category = params.get("category") ?? "";
+  const page = readPage(params);
+  const [jump, setJump] = useState("");
   const [data, setData] = useState<CatalogResponse | null>(null);
   const [categories, setCategories] = useState<Array<{ name: string; count: number }>>([]);
   const [error, setError] = useState("");
@@ -66,12 +85,23 @@ export function Catalog() {
 
   const pages = data ? Math.max(1, Math.ceil(data.total / data.pageSize)) : 1;
 
+  function writeCatalog(next: { q?: string; category?: string; page?: number }, replace = false) {
+    const q = next.q !== undefined ? next.q : query;
+    const nextCategory = next.category !== undefined ? next.category : category;
+    const nextPage = next.page !== undefined ? next.page : page;
+    const upcoming = new URLSearchParams();
+    if (q) upcoming.set("q", q);
+    if (nextCategory) upcoming.set("category", nextCategory);
+    if (nextPage > 1) upcoming.set("page", String(nextPage));
+    setParams(upcoming, { replace });
+  }
+
   return (
     <div className="stack">
       <h1 className="catalog-title">Catalog</h1>
       <div className="filters">
-        <input value={query} onChange={(event) => { setQuery(event.target.value); setPage(1); }} placeholder="Search title, author, or theme" aria-label="Search books" />
-        <select value={category} onChange={(event) => { setCategory(event.target.value); setPage(1); }} aria-label="Category">
+        <input value={query} onChange={(event) => writeCatalog({ q: event.target.value, page: 1 }, true)} placeholder="Search title, author, or theme" aria-label="Search books" />
+        <select value={category} onChange={(event) => writeCatalog({ category: event.target.value, page: 1 }, true)} aria-label="Category">
           <option value="">All categories</option>
           {categories.map((item) => <option key={item.name} value={item.name}>{item.name} ({item.count})</option>)}
         </select>
@@ -87,9 +117,25 @@ export function Catalog() {
         ))}
       </div>
       <div className="pager">
-        <button className="ghost" disabled={page <= 1} onClick={() => setPage((value) => value - 1)}>Previous</button>
-        <span className="muted">Page {page} of {pages}</span>
-        <button className="ghost" disabled={page >= pages} onClick={() => setPage((value) => value + 1)}>Next</button>
+        <button className="ghost" type="button" disabled={page <= 1} onClick={() => writeCatalog({ page: page - 1 })}>Previous</button>
+        {pageItems(page, pages).map((item, index) => item === "gap" ? (
+          <span className="muted" key={`gap-${index}`} aria-hidden="true">…</span>
+        ) : (
+          <button className={item === page ? "solid" : "ghost"} type="button" key={item} aria-current={item === page ? "page" : undefined} onClick={() => { if (item !== page) writeCatalog({ page: item }); }}>{item}</button>
+        ))}
+        <button className="ghost" type="button" disabled={page >= pages} onClick={() => writeCatalog({ page: page + 1 })}>Next</button>
+        <form className="pager-jump" onSubmit={(event) => {
+          event.preventDefault();
+          const value = Number(jump);
+          if (!Number.isInteger(value) || value < 1 || value > pages) return;
+          writeCatalog({ page: value });
+          setJump("");
+        }}>
+          <label>
+            <span>Go to page</span>
+            <input value={jump} onChange={(event) => setJump(event.target.value)} inputMode="numeric" aria-label="Go to page" />
+          </label>
+        </form>
       </div>
     </div>
   );
