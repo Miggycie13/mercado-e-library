@@ -30,7 +30,7 @@ type AgentResult = {
 const memory = new Map<string, { books: MemoryBook[]; updatedAt: number }>();
 const pending = new Map<string, PendingAction>();
 
-const SYSTEM = `You are the librarian embedded inside the Mercado E-Library. You may only state catalog facts that come back from tools.
+const SYSTEM = `You are the librarian embedded inside The Emerald Archive. You may only state catalog facts that come back from tools.
 Rules:
 - For any book question, call search_books, then call get_book_details on a returned id before you recommend or compare.
 - Never invent titles, authors, or ids.

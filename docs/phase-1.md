@@ -1,4 +1,4 @@
-Mercado E-Library is a shared catalog of public-domain books. A website and an Android app both use one API on port 4000 and one SQLite database reached through Prisma.
+The Emerald Archive is a shared catalog of public-domain books. A website and an Android app both use one API on port 4000 and one SQLite database reached through Prisma.
 
 A guest needs no account. A guest can open the catalog, open a book, download up to 5 distinct books, and ask the librarian. A guest cannot save a book to My Library or Favorites. Downloading a book that was already downloaded does not take another slot. The server enforces the limit.
 

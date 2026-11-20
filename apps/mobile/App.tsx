@@ -331,7 +331,7 @@ export default function App() {
     <SafeAreaView style={styles.screen}>
       <StatusBar style="dark" />
       <View style={styles.header}>
-        <Text style={styles.brand}>Mercado Library</Text>
+        <Text style={styles.brand}>The Emerald Archive</Text>
         <Text style={styles.quota}>{quota ? `${quota.remaining} of ${quota.limit} downloads left` : "Connecting…"}</Text>
       </View>
       {error ? <Text style={styles.error}>{error}</Text> : null}

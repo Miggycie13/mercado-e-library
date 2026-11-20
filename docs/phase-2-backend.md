@@ -1,4 +1,4 @@
-Mercado E-Library keeps one API on port 4000 and one SQLite database. The website reaches that API through its development proxy. Android uses http://10.0.2.2:4000 unless the Account screen saves another address. Both clients send the saved token with each signed-in request. The shared tables are User, Book, DownloadLog, Favorite, and LibraryItem.
+The Emerald Archive keeps one API on port 4000 and one SQLite database. The website reaches that API through its development proxy. Android uses http://10.0.2.2:4000 unless the Account screen saves another address. Both clients send the saved token with each signed-in request. The shared tables are User, Book, DownloadLog, Favorite, and LibraryItem.
 
 A guest request to the catalog, with no token, returned 307 books. The guest download quota was mode guest with a limit of 5. Filtering the same catalog by author Charles Dickens and category Fiction returned 15 books, including A Christmas Carol. Opening that book by its id returned the title A Christmas Carol. A guest attempt to save a favorite was rejected.
 

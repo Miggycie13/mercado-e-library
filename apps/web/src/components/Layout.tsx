@@ -40,7 +40,7 @@ export function Layout() {
     <div className="shell">
       <header className="topbar">
         <NavLink to="/" className="brand">
-          <strong>Mercado Library</strong>
+          <strong>The Emerald Archive</strong>
           <span>Public-domain reading room</span>
         </NavLink>
         <nav className="nav">
