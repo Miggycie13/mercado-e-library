@@ -19,7 +19,17 @@ import {
 } from "react-native";
 
 type User = { id: string; name: string; email: string; role: string };
-type Book = { id: string; title: string; author: string; category: string; year: number; description: string; sourceUrl?: string | null };
+type Book = {
+  id: string;
+  title: string;
+  author: string;
+  category: string;
+  year: number;
+  description: string;
+  sourceUrl?: string | null;
+  inLibrary?: boolean;
+  isFavorite?: boolean;
+};
 type Quota = { limit: number; remaining: number; mode: string };
 type Trace = { name: string };
 type Pending = { confirmationId: string; title: string; author: string };
@@ -67,6 +77,9 @@ export default function App() {
   const [ready, setReady] = useState(false);
   const [tab, setTab] = useState<Tab>("catalog");
   const [query, setQuery] = useState("");
+  const [author, setAuthor] = useState("");
+  const [category, setCategory] = useState("");
+  const [categories, setCategories] = useState<string[]>([]);
   const [books, setBooks] = useState<Book[]>([]);
   const [selected, setSelected] = useState<Book | null>(null);
   const [quota, setQuota] = useState<Quota | null>(null);
@@ -115,9 +128,16 @@ export default function App() {
   }, [ready, base, token]);
 
   useEffect(() => {
+    if (!ready) return;
+    request(base, "/api/books/categories", null)
+      .then((data) => setCategories(data.categories.map((item: { name: string }) => item.name)))
+      .catch(() => setCategories([]));
+  }, [ready, base]);
+
+  useEffect(() => {
     if (!ready || tab === "account") return;
     const path = tab === "catalog"
-      ? `/api/books?q=${encodeURIComponent(query)}&pageSize=30`
+      ? `/api/books?q=${encodeURIComponent(query)}&author=${encodeURIComponent(author)}&category=${encodeURIComponent(category)}&pageSize=30`
       : `/api/user/${tab}`;
     if (tab !== "catalog" && !token) {
       setBooks([]);
@@ -126,7 +146,7 @@ export default function App() {
     request(base, path, token)
       .then((data) => setBooks(data.books))
       .catch((reason) => setError(reason.message));
-  }, [ready, tab, query, token, base]);
+  }, [ready, tab, query, author, category, token, base]);
 
   async function signIn() {
     setError("");
@@ -206,6 +226,18 @@ export default function App() {
     }
   }
 
+  async function openBook(item: Book) {
+    setNote("");
+    setError("");
+    setSelected(item);
+    try {
+      const data = await request(base, `/api/books/${item.id}`, token);
+      setSelected(data.book);
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : "Could not load this book.");
+    }
+  }
+
   async function saveBook(book: Book) {
     if (!token) {
       setSelected(null);
@@ -215,10 +247,34 @@ export default function App() {
     setError("");
     try {
       await request(base, "/api/user/library", token, { method: "POST", body: JSON.stringify({ bookId: book.id }) });
+      setSelected({ ...book, inLibrary: true });
       setNote("Saved.");
     } catch (reason) {
       setNote("");
       setError(reason instanceof Error ? reason.message : "Could not update your shelf.");
+    }
+  }
+
+  async function favoriteBook(book: Book) {
+    if (!token) {
+      setSelected(null);
+      setTab("account");
+      return;
+    }
+    setError("");
+    try {
+      if (book.isFavorite) {
+        await request(base, `/api/user/favorites/${book.id}`, token, { method: "DELETE" });
+        setSelected({ ...book, isFavorite: false });
+        setNote("Removed from Favorites.");
+      } else {
+        await request(base, "/api/user/favorites", token, { method: "POST", body: JSON.stringify({ bookId: book.id }) });
+        setSelected({ ...book, isFavorite: true });
+        setNote("Saved to Favorites.");
+      }
+    } catch (reason) {
+      setNote("");
+      setError(reason instanceof Error ? reason.message : "Could not update Favorites.");
     }
   }
 
@@ -345,7 +401,10 @@ export default function App() {
           {note ? <Text style={styles.note}>{note}</Text> : null}
           <Pressable style={styles.solid} onPress={() => download(selected)}><Text style={styles.solidText}>Download PDF</Text></Pressable>
           {token ? (
-            <Pressable onPress={() => saveBook(selected)}><Text style={styles.link}>Add to My Library</Text></Pressable>
+            <>
+              <Pressable onPress={() => saveBook(selected)}><Text style={styles.link}>Add to My Library</Text></Pressable>
+              <Pressable onPress={() => favoriteBook(selected)}><Text style={styles.link}>{selected.isFavorite ? "Unfavorite" : "Favorite"}</Text></Pressable>
+            </>
           ) : (
             <Pressable onPress={() => { setNote(""); setSelected(null); setTab("account"); }}><Text style={styles.link}>Sign in to save this book</Text></Pressable>
           )}
@@ -356,13 +415,20 @@ export default function App() {
             <View style={styles.catalogHead}>
               <Text style={styles.pageTitle}>Catalog</Text>
               <TextInput style={[styles.search, styles.searchFlush]} value={query} onChangeText={setQuery} placeholder="Search title, author, or theme" placeholderTextColor="#645c52" />
+              <TextInput style={[styles.search, styles.searchFlush]} value={author} onChangeText={setAuthor} placeholder="Author" placeholderTextColor="#645c52" />
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterRow}>
+                <Pressable onPress={() => setCategory("")}><Text style={category === "" ? styles.tabOn : styles.tab}>All</Text></Pressable>
+                {categories.map((name) => (
+                  <Pressable key={name} onPress={() => setCategory(name)}><Text style={category === name ? styles.tabOn : styles.tab}>{name}</Text></Pressable>
+                ))}
+              </ScrollView>
             </View>
           )}
           {!token && tab !== "catalog" ? (
             <Text style={styles.empty} onPress={() => setTab("account")}>Sign in to see this shelf.</Text>
           ) : books.length === 0 && tab !== "catalog" ? (
             <Text style={styles.empty}>Nothing here yet. Ask the librarian to save a book, then confirm it.</Text>
-          ) : books.length === 0 && query.trim() ? (
+          ) : books.length === 0 && (query.trim() || author.trim() || category) ? (
             <Text style={styles.empty}>No books match this search.</Text>
           ) : (
             <FlatList
@@ -373,7 +439,7 @@ export default function App() {
               columnWrapperStyle={{ gap: tileGap }}
               contentContainerStyle={styles.list}
               renderItem={({ item }) => (
-                <Pressable style={[styles.tile, { width: tileWidth }]} onPress={() => { setNote(""); setSelected(item); }}>
+                <Pressable style={[styles.tile, { width: tileWidth }]} onPress={() => openBook(item)}>
                   <View style={styles.tileCover}>
                     <Text style={styles.tileKicker} numberOfLines={1}>{item.category}</Text>
                     <Text style={styles.tileTitle} numberOfLines={2}>{item.title}</Text>
@@ -453,6 +519,7 @@ const styles = StyleSheet.create({
   heading: { fontSize: 24, color: "#1c1712" },
   pageTitle: { fontFamily: SERIF, fontWeight: "500", fontSize: 22, color: "#1c1712" },
   catalogHead: { paddingHorizontal: 16, paddingTop: 16, paddingBottom: 16, gap: 8 },
+  filterRow: { gap: 16, alignItems: "center" },
   searchFlush: { margin: 0 },
   form: { width: "100%", maxWidth: 448, gap: 16 },
   field: { gap: 8 },
