@@ -2,6 +2,7 @@ import { Router } from "express";
 import { z } from "zod";
 import { checkPassword, hashPassword, publicUser, signToken } from "../lib/auth";
 import { prisma } from "../lib/prisma";
+import { fileContains, flushDatabase } from "../lib/sqlite";
 import { requireAuth } from "../middleware/auth";
 import { HttpError } from "../types";
 
@@ -21,6 +22,9 @@ router.post("/register", async (req, res, next) => {
     const user = await prisma.user.create({
       data: { email, name: body.name.trim(), passwordHash: await hashPassword(body.password), role: "user" },
     });
+    flushDatabase();
+    if (!fileContains(email)) throw new HttpError(500, "The account could not be saved.");
+    console.log(`Registered ${email} in the library file`);
     const safe = publicUser(user);
     res.status(201).json({ token: signToken(safe), user: safe });
   } catch (error) {

@@ -95,7 +95,6 @@ CREATE TABLE IF NOT EXISTS "LibraryItem" (
 CREATE UNIQUE INDEX IF NOT EXISTS "LibraryItem_userId_bookId_key" ON "LibraryItem"("userId", "bookId");
 `;
 
-let flushTimer: NodeJS.Timeout | null = null;
 let activeDatabase: { db: SqlDatabase; file: string } | null = null;
 
 export function execScript(script: string) {
@@ -105,34 +104,24 @@ export function execScript(script: string) {
 }
 
 export function flushDatabase() {
-  if (!activeDatabase) return;
-  if (flushTimer) {
-    clearTimeout(flushTimer);
-    flushTimer = null;
-  }
-  const bytes = activeDatabase.db.export();
-  fs.mkdirSync(path.dirname(activeDatabase.file), { recursive: true });
-  const temporary = `${activeDatabase.file}.tmp`;
-  fs.writeFileSync(temporary, Buffer.from(bytes));
+  if (!activeDatabase) throw new Error("Database is not open.");
+  const file = activeDatabase.file;
+  const bytes = Buffer.from(activeDatabase.db.export());
+  fs.mkdirSync(path.dirname(file), { recursive: true });
+  const fd = fs.openSync(file, "w");
   try {
-    fs.renameSync(temporary, activeDatabase.file);
-  } catch {
-    try {
-      fs.copyFileSync(temporary, activeDatabase.file);
-    } catch (error) {
-      console.error("Could not save the library database.", error);
-    }
+    fs.writeSync(fd, bytes);
+    fs.fsyncSync(fd);
   } finally {
-    fs.rmSync(temporary, { force: true });
+    fs.closeSync(fd);
   }
+  const saved = fs.statSync(file);
+  console.log(`Saved ${file} (${saved.size} bytes)`);
 }
 
-function scheduleFlush() {
-  if (flushTimer) return;
-  flushTimer = setTimeout(() => {
-    flushTimer = null;
-    flushDatabase();
-  }, 200);
+export function fileContains(text: string) {
+  if (!activeDatabase) return false;
+  return fs.readFileSync(activeDatabase.file).includes(Buffer.from(text));
 }
 
 function sqlitePath(databaseUrl: string) {
@@ -259,7 +248,7 @@ class SqlJsQueryable {
     debug("[js::executeRaw] %O", query);
     try {
       const changes = this.perform(query).changes;
-      scheduleFlush();
+      flushDatabase();
       return changes;
     } catch (error) {
       driverError(error);
@@ -295,7 +284,7 @@ class SqlJsTransaction extends SqlJsQueryable implements Transaction {
   async commit() {
     this.finish("COMMIT");
     this.unlock();
-    scheduleFlush();
+    flushDatabase();
   }
 
   async rollback() {
@@ -334,14 +323,18 @@ class SqlJsAdapter extends SqlJsQueryable implements SqlDriverAdapter {
   }
 
   override executeRaw(query: SqlQuery) {
-    return this.exclusive(() => super.executeRaw(query));
+    return this.exclusive(async () => {
+      const changes = await super.executeRaw(query);
+      flushDatabase();
+      return changes;
+    });
   }
 
   executeScript(script: string) {
     return this.exclusive(async () => {
       try {
         this.client.exec(script);
-        scheduleFlush();
+        flushDatabase();
       } catch (error) {
         driverError(error);
       }
