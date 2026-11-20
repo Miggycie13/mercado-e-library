@@ -499,10 +499,6 @@ export type IntFieldUpdateOperationsInput = {
   divide?: number
 }
 
-export type NullableStringFieldUpdateOperationsInput = {
-  set?: string | null
-}
-
 export type BookCreateNestedOneWithoutDownloadsInput = {
   create?: Prisma.XOR<Prisma.BookCreateWithoutDownloadsInput, Prisma.BookUncheckedCreateWithoutDownloadsInput>
   connectOrCreate?: Prisma.BookCreateOrConnectWithoutDownloadsInput

@@ -43,6 +43,9 @@ CREATE TABLE IF NOT EXISTS "User" (
   "name" TEXT NOT NULL,
   "passwordHash" TEXT NOT NULL,
   "role" TEXT NOT NULL DEFAULT 'user',
+  "emailVerified" BOOLEAN NOT NULL DEFAULT 1,
+  "otpHash" TEXT,
+  "otpExpiresAt" DATETIME,
   "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 CREATE UNIQUE INDEX IF NOT EXISTS "User_email_key" ON "User"("email");
@@ -187,6 +190,7 @@ function mapArg(arg: unknown, argType: ArgType | undefined): SqlValue {
 function mapValue(value: SqlValue, type: ColumnType): SqlResultSet["rows"][number][number] {
   if (value == null) return null;
   if (value instanceof Uint8Array) return Array.from(value);
+  if (type === ColumnTypeEnum.Boolean) return Number(value) === 1;
   if (typeof value === "number" && type === ColumnTypeEnum.DateTime) return new Date(value).toISOString();
   if (typeof value === "number" && (type === ColumnTypeEnum.Int32 || type === ColumnTypeEnum.Int64) && !Number.isInteger(value)) {
     return Math.trunc(value);
@@ -379,6 +383,18 @@ async function openDatabase(file: string) {
   const existing = fs.existsSync(file) && fs.statSync(file).size > 0 ? new Uint8Array(fs.readFileSync(file)) : undefined;
   const db = existing ? new SQL.Database(existing) : new SQL.Database();
   db.exec(SCHEMA);
+  for (const statement of [
+    `ALTER TABLE "User" ADD COLUMN "emailVerified" BOOLEAN NOT NULL DEFAULT 1`,
+    `ALTER TABLE "User" ADD COLUMN "otpHash" TEXT`,
+    `ALTER TABLE "User" ADD COLUMN "otpExpiresAt" DATETIME`,
+  ]) {
+    try {
+      db.exec(statement);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "";
+      if (!message.includes("duplicate column")) throw error;
+    }
+  }
   activeDatabase = { db, file };
   flushDatabase();
   return db;

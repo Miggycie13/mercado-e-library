@@ -19,18 +19,24 @@ export async function seedDatabase() {
   const readerPassword = await hashPassword(process.env.READER_PASSWORD || "Reader123!");
   const existing = await prisma.book.count();
   const users = `
-    INSERT INTO "User" ("id", "email", "name", "passwordHash", "role", "createdAt")
-    VALUES ('user-admin', 'admin@elibrary.local', 'Library Admin', ${sqlText(adminPassword)}, 'admin', ${now})
+    INSERT INTO "User" ("id", "email", "name", "passwordHash", "role", "emailVerified", "createdAt")
+    VALUES ('user-admin', 'admin@elibrary.local', 'Library Admin', ${sqlText(adminPassword)}, 'admin', 1, ${now})
     ON CONFLICT("email") DO UPDATE SET
       "name" = 'Library Admin',
       "role" = 'admin',
-      "passwordHash" = ${sqlText(adminPassword)};
-    INSERT INTO "User" ("id", "email", "name", "passwordHash", "role", "createdAt")
-    VALUES ('user-reader', 'reader@elibrary.local', 'Ava Reader', ${sqlText(readerPassword)}, 'user', ${now})
+      "passwordHash" = ${sqlText(adminPassword)},
+      "emailVerified" = 1,
+      "otpHash" = NULL,
+      "otpExpiresAt" = NULL;
+    INSERT INTO "User" ("id", "email", "name", "passwordHash", "role", "emailVerified", "createdAt")
+    VALUES ('user-reader', 'reader@elibrary.local', 'Ava Reader', ${sqlText(readerPassword)}, 'user', 1, ${now})
     ON CONFLICT("email") DO UPDATE SET
       "name" = 'Ava Reader',
       "role" = 'user',
-      "passwordHash" = ${sqlText(readerPassword)};
+      "passwordHash" = ${sqlText(readerPassword)},
+      "emailVerified" = 1,
+      "otpHash" = NULL,
+      "otpExpiresAt" = NULL;
   `;
 
   if (existing >= 200) {

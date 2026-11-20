@@ -5,7 +5,9 @@ type AuthValue = {
   user: User | null;
   ready: boolean;
   login: (email: string, password: string) => Promise<void>;
-  register: (name: string, email: string, password: string) => Promise<void>;
+  register: (name: string, email: string, password: string) => Promise<{ pending: boolean }>;
+  confirm: (email: string, code: string) => Promise<void>;
+  sendCode: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
 };
 
@@ -39,12 +41,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(data.user);
     },
     async register(name, email, password) {
-      const data = await api<{ token: string; user: User }>("/api/auth/register", {
+      const data = await api<{ pending?: boolean; token?: string; user?: User }>("/api/auth/register", {
         method: "POST",
         body: JSON.stringify({ name, email, password }),
       });
+      if (data.pending || !data.token || !data.user) return { pending: true };
       localStorage.setItem("elibrary.token", data.token);
       setUser(data.user);
+      return { pending: false };
+    },
+    async confirm(email, code) {
+      const data = await api<{ token: string; user: User }>("/api/auth/verify", {
+        method: "POST",
+        body: JSON.stringify({ email, code }),
+      });
+      localStorage.setItem("elibrary.token", data.token);
+      setUser(data.user);
+    },
+    async sendCode(email, password) {
+      await api("/api/auth/code", {
+        method: "POST",
+        body: JSON.stringify({ email, password }),
+      });
     },
     async logout() {
       await api("/api/auth/logout", { method: "POST" }).catch(() => undefined);
