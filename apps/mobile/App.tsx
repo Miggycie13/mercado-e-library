@@ -71,11 +71,7 @@ async function request(base: string, path: string, token: string | null, options
   if (token) headers.set("Authorization", `Bearer ${token}`);
   const response = await fetch(`${base}${path}`, { ...options, headers });
   const data = await response.json().catch(() => ({}));
-  if (!response.ok) {
-    const failure = new Error(data.error || "Request failed.") as Error & { code?: string };
-    failure.code = data.code;
-    throw failure;
-  }
+  if (!response.ok) throw new Error(data.error || "Request failed.");
   return data;
 }
 
@@ -97,8 +93,7 @@ export default function App() {
   const [selected, setSelected] = useState<Book | null>(null);
   const [quota, setQuota] = useState<Quota | null>(null);
   const [error, setError] = useState("");
-  const [accountMode, setAccountMode] = useState<"sign-in" | "register" | "code">("sign-in");
-  const [code, setCode] = useState("");
+  const [accountMode, setAccountMode] = useState<"sign-in" | "register">("sign-in");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("reader@elibrary.local");
   const [password, setPassword] = useState("Reader123!");
@@ -181,8 +176,6 @@ export default function App() {
       await AsyncStorage.setItem("elibrary.token", data.token);
       setTab("catalog");
     } catch (reason) {
-      const coded = reason as Error & { code?: string };
-      if (coded.code === "unconfirmed") setAccountMode("code");
       setError(reason instanceof Error ? reason.message : "Could not sign in.");
     }
   }
@@ -194,44 +187,12 @@ export default function App() {
         method: "POST",
         body: JSON.stringify({ name, email, password }),
       });
-      if (data.pending) {
-        setAccountMode("code");
-        return;
-      }
       setToken(data.token);
       setUser(data.user);
       await AsyncStorage.setItem("elibrary.token", data.token);
       setTab("catalog");
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "Could not create the account.");
-    }
-  }
-
-  async function sendNewCode() {
-    setError("");
-    try {
-      await request(base, "/api/auth/code", null, {
-        method: "POST",
-        body: JSON.stringify({ email, password }),
-      });
-    } catch (reason) {
-      setError(reason instanceof Error ? reason.message : "Could not send a new code.");
-    }
-  }
-
-  async function confirmCode() {
-    setError("");
-    try {
-      const data = await request(base, "/api/auth/verify", null, {
-        method: "POST",
-        body: JSON.stringify({ email, code }),
-      });
-      setToken(data.token);
-      setUser(data.user);
-      await AsyncStorage.setItem("elibrary.token", data.token);
-      setTab("catalog");
-    } catch (reason) {
-      setError(reason instanceof Error ? reason.message : "Could not confirm the code.");
     }
   }
 
@@ -399,20 +360,6 @@ export default function App() {
                 <Text style={styles.heading}>{user.name}</Text>
                 <Text style={styles.muted}>{user.email}</Text>
                 <Pressable onPress={signOut}><Text style={styles.link}>Log out</Text></Pressable>
-              </>
-            ) : accountMode === "code" ? (
-              <>
-                <Text style={styles.heading}>Enter the code</Text>
-                <Text style={styles.muted}>We sent a 6-digit code to {email}.</Text>
-                <View style={styles.field}>
-                  <Text style={styles.label}>Code</Text>
-                  <TextInput style={styles.accountInput} value={code} onChangeText={setCode} keyboardType="number-pad" />
-                </View>
-                <Pressable style={styles.solid} onPress={confirmCode}><Text style={styles.solidText}>Confirm</Text></Pressable>
-                <Pressable onPress={sendNewCode}><Text style={styles.link}>Send a new code</Text></Pressable>
-                <Pressable onPress={() => { setAccountMode("sign-in"); setError(""); }}>
-                  <Text style={styles.link}>Sign in</Text>
-                </Pressable>
               </>
             ) : accountMode === "register" ? (
               <>

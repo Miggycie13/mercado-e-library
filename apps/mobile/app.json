@@ -14,7 +14,10 @@
       "supportsTablet": true
     },
     "extra": {
-      "apiUrl": "http://10.0.2.2:4000"
+      "apiUrl": "http://10.0.2.2:4000",
+      "eas": {
+        "projectId": "eaba615b-d29b-44c2-9344-7ce6e04cf2bf"
+      }
     }
   }
 }
