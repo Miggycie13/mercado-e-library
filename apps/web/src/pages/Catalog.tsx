@@ -42,7 +42,7 @@ export function Catalog() {
     let timer = 0;
 
     const loadBooks = () => {
-      const params = new URLSearchParams({ q: query, category, page: String(page), pageSize: "10" });
+      const params = new URLSearchParams({ q: query, category, page: String(page), pageSize: "15" });
       api<CatalogResponse>(`/api/books?${params}`)
         .then((result) => {
           if (cancelled) return;
