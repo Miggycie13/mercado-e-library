@@ -1,16 +1,9 @@
 import "dotenv/config";
-import { exec } from "child_process";
-import { promisify } from "util";
 import { createApp } from "./app";
 import { aiMode } from "./ai/agent";
+import { flushDatabase } from "./lib/sqlite";
 import { prisma } from "./lib/prisma";
 import { seedDatabase } from "./seed";
-
-const execAsync = promisify(exec);
-
-async function ensureDatabase() {
-  await execAsync("npx prisma db push --skip-generate");
-}
 
 async function main() {
   const port = Number(process.env.PORT || 4000);
@@ -21,8 +14,8 @@ async function main() {
       resolve();
     });
   });
-  ensureDatabase();
   await seedDatabase();
+  flushDatabase();
 }
 
 main().catch(async (error) => {

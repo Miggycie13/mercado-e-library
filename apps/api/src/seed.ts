@@ -1,6 +1,11 @@
 import { describeBook, seedBooks } from "./data/books";
 import { hashPassword } from "./lib/auth";
 import { prisma } from "./lib/prisma";
+import { execScript } from "./lib/sqlite";
+
+function sqlText(value: string) {
+  return `'${value.replace(/'/g, "''")}'`;
+}
 
 export async function seedDatabase() {
   const titles = seedBooks.map((book) => book.title.toLowerCase());
@@ -9,52 +14,41 @@ export async function seedDatabase() {
     throw new Error(`Seed catalog must contain at least 200 unique titles. Found ${unique.size} unique of ${seedBooks.length}.`);
   }
 
+  const now = Date.now();
   const adminPassword = await hashPassword(process.env.ADMIN_PASSWORD || "Admin123!");
   const readerPassword = await hashPassword(process.env.READER_PASSWORD || "Reader123!");
-  await prisma.user.upsert({
-    where: { email: "admin@elibrary.local" },
-    update: { name: "Library Admin", role: "admin", passwordHash: adminPassword },
-    create: {
-      email: "admin@elibrary.local",
-      name: "Library Admin",
-      role: "admin",
-      passwordHash: adminPassword,
-    },
-  });
-  await prisma.user.upsert({
-    where: { email: "reader@elibrary.local" },
-    update: { name: "Ava Reader", role: "user", passwordHash: readerPassword },
-    create: {
-      email: "reader@elibrary.local",
-      name: "Ava Reader",
-      role: "user",
-      passwordHash: readerPassword,
-    },
-  });
-
   const existing = await prisma.book.count();
+  const users = `
+    INSERT INTO "User" ("id", "email", "name", "passwordHash", "role", "createdAt")
+    VALUES ('user-admin', 'admin@elibrary.local', 'Library Admin', ${sqlText(adminPassword)}, 'admin', ${now})
+    ON CONFLICT("email") DO UPDATE SET
+      "name" = 'Library Admin',
+      "role" = 'admin',
+      "passwordHash" = ${sqlText(adminPassword)};
+    INSERT INTO "User" ("id", "email", "name", "passwordHash", "role", "createdAt")
+    VALUES ('user-reader', 'reader@elibrary.local', 'Ava Reader', ${sqlText(readerPassword)}, 'user', ${now})
+    ON CONFLICT("email") DO UPDATE SET
+      "name" = 'Ava Reader',
+      "role" = 'user',
+      "passwordHash" = ${sqlText(readerPassword)};
+  `;
+
   if (existing >= 200) {
+    execScript(users);
     console.log(`Catalog already has ${existing} books. Skipped book seed.`);
     return existing;
   }
 
-  for (const book of seedBooks) {
-    const description = describeBook(book);
+  const values = seedBooks.map((book, index) => {
     const sourceUrl = book.gutenbergId ? `https://www.gutenberg.org/ebooks/${book.gutenbergId}` : null;
-    await prisma.book.upsert({
-      where: { title_author: { title: book.title, author: book.author } },
-      update: { category: book.category, year: book.year, description, sourceUrl, language: "English" },
-      create: {
-        title: book.title,
-        author: book.author,
-        category: book.category,
-        year: book.year,
-        description,
-        sourceUrl,
-        language: "English",
-      },
-    });
-  }
+    return `('seed-${index + 1}', ${sqlText(book.title)}, ${sqlText(book.author)}, ${sqlText(book.category)}, ${book.year}, 'English', ${sqlText(describeBook(book))}, ${sourceUrl ? sqlText(sourceUrl) : "NULL"}, ${now}, ${now})`;
+  });
+  execScript(`
+    ${users}
+    INSERT INTO "Book" ("id", "title", "author", "category", "year", "language", "description", "sourceUrl", "createdAt", "updatedAt")
+    VALUES ${values.join(",\n")}
+    ON CONFLICT("title", "author") DO NOTHING;
+  `);
 
   const count = await prisma.book.count();
   console.log(`Catalog ready with ${count} books.`);

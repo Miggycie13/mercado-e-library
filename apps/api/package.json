@@ -5,13 +5,15 @@
   "scripts": {
     "postinstall": "prisma generate",
     "dev": "tsx watch src/index.ts",
-    "build": "tsc",
+    "build": "prisma generate && tsc || tsc",
     "start": "prisma db push --skip-generate && tsx src/index.ts",
     "seed": "tsx src/seed-cli.ts",
     "db:push": "prisma db push"
   },
   "dependencies": {
     "@prisma/client": "^6.16.2",
+    "@prisma/driver-adapter-utils": "^6.16.2",
+    "sql.js": "^1.13.0",
     "bcryptjs": "^2.4.3",
     "cors": "^2.8.5",
     "dotenv": "^16.6.1",

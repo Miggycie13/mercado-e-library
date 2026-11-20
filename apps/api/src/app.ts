@@ -1,6 +1,6 @@
 import fs from "fs";
 import path from "path";
-import { Prisma } from "@prisma/client";
+import { Prisma } from "./generated/prisma/client";
 import cors from "cors";
 import express from "express";
 import { ZodError } from "zod";

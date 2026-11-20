@@ -1,15 +1,37 @@
 kind: wasmer.io/App.v0
 name: mercado-e-library
-owner: YOUR_WASMER_USERNAME
+owner: miggycie13
 package: .
-description: Mercado E-Library API and web client
-debug: true
 env:
-  PORT: "4000"
-  DATABASE_URL: "file:/data/library.db"
-  JWT_SECRET: "change-me-before-deploy"
-  GUEST_DOWNLOAD_LIMIT: "5"
-  USER_DOWNLOAD_LIMIT: "10"
+  PORT: '4000'
+  DATABASE_URL: file:/data/library.db
+  JWT_SECRET: TRMKQSpsaoB1oEH0PncPVJCnvd815gl881zqfx2vNAw=
+  GUEST_DOWNLOAD_LIMIT: '5'
+  USER_DOWNLOAD_LIMIT: '10'
 volumes:
-  - name: library-data
-    mount: /data
+- name: library-data
+  mount: /data
+debug: true
+description: Mercado E-Library API and web client
+app_id: da_K1EIZtMUePYa
+annotations:
+  anybuild.run/config:
+    commands:
+      start: node apps/api/dist/index.js
+    edgejs_enable: true
+    edgejs_precompile: true
+    name: out
+    node_build_command: npm run build
+    node_install_inputs:
+    - package.json
+    - apps/api/package.json
+    - apps/web/package.json
+    node_install_requires_all_files: true
+    node_package_manager: npm
+    node_package_name: mercado-e-library
+    node_remove_native_binaries: true
+    node_server: node
+    npm_version: '11'
+  anybuild.run/provider: node
+  anybuild.run/version: 0.33.3
+  wasmer.io/version: 7.5.0
