@@ -13,9 +13,12 @@ model User {
   id           String        @id @default(cuid())
   email        String        @unique
   name         String
-  passwordHash String
-  role         String        @default("user")
-  createdAt    DateTime      @default(now())
+  passwordHash  String
+  role          String        @default("user")
+  emailVerified Boolean       @default(false)
+  otpHash       String?
+  otpExpiresAt  DateTime?
+  createdAt     DateTime      @default(now())
   downloads    DownloadLog[]
   favorites    Favorite[]
   libraryItems LibraryItem[]

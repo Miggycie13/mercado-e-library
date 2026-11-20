@@ -30,6 +30,9 @@ export type UserMinAggregateOutputType = {
   name: string | null
   passwordHash: string | null
   role: string | null
+  emailVerified: boolean | null
+  otpHash: string | null
+  otpExpiresAt: Date | null
   createdAt: Date | null
 }
 
@@ -39,6 +42,9 @@ export type UserMaxAggregateOutputType = {
   name: string | null
   passwordHash: string | null
   role: string | null
+  emailVerified: boolean | null
+  otpHash: string | null
+  otpExpiresAt: Date | null
   createdAt: Date | null
 }
 
@@ -48,6 +54,9 @@ export type UserCountAggregateOutputType = {
   name: number
   passwordHash: number
   role: number
+  emailVerified: number
+  otpHash: number
+  otpExpiresAt: number
   createdAt: number
   _all: number
 }
@@ -59,6 +68,9 @@ export type UserMinAggregateInputType = {
   name?: true
   passwordHash?: true
   role?: true
+  emailVerified?: true
+  otpHash?: true
+  otpExpiresAt?: true
   createdAt?: true
 }
 
@@ -68,6 +80,9 @@ export type UserMaxAggregateInputType = {
   name?: true
   passwordHash?: true
   role?: true
+  emailVerified?: true
+  otpHash?: true
+  otpExpiresAt?: true
   createdAt?: true
 }
 
@@ -77,6 +92,9 @@ export type UserCountAggregateInputType = {
   name?: true
   passwordHash?: true
   role?: true
+  emailVerified?: true
+  otpHash?: true
+  otpExpiresAt?: true
   createdAt?: true
   _all?: true
 }
@@ -159,6 +177,9 @@ export type UserGroupByOutputType = {
   name: string
   passwordHash: string
   role: string
+  emailVerified: boolean
+  otpHash: string | null
+  otpExpiresAt: Date | null
   createdAt: Date
   _count: UserCountAggregateOutputType | null
   _min: UserMinAggregateOutputType | null
@@ -189,6 +210,9 @@ export type UserWhereInput = {
   name?: Prisma.StringFilter<"User"> | string
   passwordHash?: Prisma.StringFilter<"User"> | string
   role?: Prisma.StringFilter<"User"> | string
+  emailVerified?: Prisma.BoolFilter<"User"> | boolean
+  otpHash?: Prisma.StringNullableFilter<"User"> | string | null
+  otpExpiresAt?: Prisma.DateTimeNullableFilter<"User"> | Date | string | null
   createdAt?: Prisma.DateTimeFilter<"User"> | Date | string
   downloads?: Prisma.DownloadLogListRelationFilter
   favorites?: Prisma.FavoriteListRelationFilter
@@ -201,6 +225,9 @@ export type UserOrderByWithRelationInput = {
   name?: Prisma.SortOrder
   passwordHash?: Prisma.SortOrder
   role?: Prisma.SortOrder
+  emailVerified?: Prisma.SortOrder
+  otpHash?: Prisma.SortOrderInput | Prisma.SortOrder
+  otpExpiresAt?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   downloads?: Prisma.DownloadLogOrderByRelationAggregateInput
   favorites?: Prisma.FavoriteOrderByRelationAggregateInput
@@ -216,6 +243,9 @@ export type UserWhereUniqueInput = Prisma.AtLeast<{
   name?: Prisma.StringFilter<"User"> | string
   passwordHash?: Prisma.StringFilter<"User"> | string
   role?: Prisma.StringFilter<"User"> | string
+  emailVerified?: Prisma.BoolFilter<"User"> | boolean
+  otpHash?: Prisma.StringNullableFilter<"User"> | string | null
+  otpExpiresAt?: Prisma.DateTimeNullableFilter<"User"> | Date | string | null
   createdAt?: Prisma.DateTimeFilter<"User"> | Date | string
   downloads?: Prisma.DownloadLogListRelationFilter
   favorites?: Prisma.FavoriteListRelationFilter
@@ -228,6 +258,9 @@ export type UserOrderByWithAggregationInput = {
   name?: Prisma.SortOrder
   passwordHash?: Prisma.SortOrder
   role?: Prisma.SortOrder
+  emailVerified?: Prisma.SortOrder
+  otpHash?: Prisma.SortOrderInput | Prisma.SortOrder
+  otpExpiresAt?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   _count?: Prisma.UserCountOrderByAggregateInput
   _max?: Prisma.UserMaxOrderByAggregateInput
@@ -243,6 +276,9 @@ export type UserScalarWhereWithAggregatesInput = {
   name?: Prisma.StringWithAggregatesFilter<"User"> | string
   passwordHash?: Prisma.StringWithAggregatesFilter<"User"> | string
   role?: Prisma.StringWithAggregatesFilter<"User"> | string
+  emailVerified?: Prisma.BoolWithAggregatesFilter<"User"> | boolean
+  otpHash?: Prisma.StringNullableWithAggregatesFilter<"User"> | string | null
+  otpExpiresAt?: Prisma.DateTimeNullableWithAggregatesFilter<"User"> | Date | string | null
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"User"> | Date | string
 }
 
@@ -252,6 +288,9 @@ export type UserCreateInput = {
   name: string
   passwordHash: string
   role?: string
+  emailVerified?: boolean
+  otpHash?: string | null
+  otpExpiresAt?: Date | string | null
   createdAt?: Date | string
   downloads?: Prisma.DownloadLogCreateNestedManyWithoutUserInput
   favorites?: Prisma.FavoriteCreateNestedManyWithoutUserInput
@@ -264,6 +303,9 @@ export type UserUncheckedCreateInput = {
   name: string
   passwordHash: string
   role?: string
+  emailVerified?: boolean
+  otpHash?: string | null
+  otpExpiresAt?: Date | string | null
   createdAt?: Date | string
   downloads?: Prisma.DownloadLogUncheckedCreateNestedManyWithoutUserInput
   favorites?: Prisma.FavoriteUncheckedCreateNestedManyWithoutUserInput
@@ -276,6 +318,9 @@ export type UserUpdateInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
   role?: Prisma.StringFieldUpdateOperationsInput | string
+  emailVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  otpHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  otpExpiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   downloads?: Prisma.DownloadLogUpdateManyWithoutUserNestedInput
   favorites?: Prisma.FavoriteUpdateManyWithoutUserNestedInput
@@ -288,6 +333,9 @@ export type UserUncheckedUpdateInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
   role?: Prisma.StringFieldUpdateOperationsInput | string
+  emailVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  otpHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  otpExpiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   downloads?: Prisma.DownloadLogUncheckedUpdateManyWithoutUserNestedInput
   favorites?: Prisma.FavoriteUncheckedUpdateManyWithoutUserNestedInput
@@ -300,6 +348,9 @@ export type UserCreateManyInput = {
   name: string
   passwordHash: string
   role?: string
+  emailVerified?: boolean
+  otpHash?: string | null
+  otpExpiresAt?: Date | string | null
   createdAt?: Date | string
 }
 
@@ -309,6 +360,9 @@ export type UserUpdateManyMutationInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
   role?: Prisma.StringFieldUpdateOperationsInput | string
+  emailVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  otpHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  otpExpiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
@@ -318,6 +372,9 @@ export type UserUncheckedUpdateManyInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
   role?: Prisma.StringFieldUpdateOperationsInput | string
+  emailVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  otpHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  otpExpiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
@@ -327,6 +384,9 @@ export type UserCountOrderByAggregateInput = {
   name?: Prisma.SortOrder
   passwordHash?: Prisma.SortOrder
   role?: Prisma.SortOrder
+  emailVerified?: Prisma.SortOrder
+  otpHash?: Prisma.SortOrder
+  otpExpiresAt?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
 }
 
@@ -336,6 +396,9 @@ export type UserMaxOrderByAggregateInput = {
   name?: Prisma.SortOrder
   passwordHash?: Prisma.SortOrder
   role?: Prisma.SortOrder
+  emailVerified?: Prisma.SortOrder
+  otpHash?: Prisma.SortOrder
+  otpExpiresAt?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
 }
 
@@ -345,6 +408,9 @@ export type UserMinOrderByAggregateInput = {
   name?: Prisma.SortOrder
   passwordHash?: Prisma.SortOrder
   role?: Prisma.SortOrder
+  emailVerified?: Prisma.SortOrder
+  otpHash?: Prisma.SortOrder
+  otpExpiresAt?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
 }
 
@@ -360,6 +426,18 @@ export type UserScalarRelationFilter = {
 
 export type StringFieldUpdateOperationsInput = {
   set?: string
+}
+
+export type BoolFieldUpdateOperationsInput = {
+  set?: boolean
+}
+
+export type NullableStringFieldUpdateOperationsInput = {
+  set?: string | null
+}
+
+export type NullableDateTimeFieldUpdateOperationsInput = {
+  set?: Date | string | null
 }
 
 export type DateTimeFieldUpdateOperationsInput = {
@@ -416,6 +494,9 @@ export type UserCreateWithoutDownloadsInput = {
   name: string
   passwordHash: string
   role?: string
+  emailVerified?: boolean
+  otpHash?: string | null
+  otpExpiresAt?: Date | string | null
   createdAt?: Date | string
   favorites?: Prisma.FavoriteCreateNestedManyWithoutUserInput
   libraryItems?: Prisma.LibraryItemCreateNestedManyWithoutUserInput
@@ -427,6 +508,9 @@ export type UserUncheckedCreateWithoutDownloadsInput = {
   name: string
   passwordHash: string
   role?: string
+  emailVerified?: boolean
+  otpHash?: string | null
+  otpExpiresAt?: Date | string | null
   createdAt?: Date | string
   favorites?: Prisma.FavoriteUncheckedCreateNestedManyWithoutUserInput
   libraryItems?: Prisma.LibraryItemUncheckedCreateNestedManyWithoutUserInput
@@ -454,6 +538,9 @@ export type UserUpdateWithoutDownloadsInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
   role?: Prisma.StringFieldUpdateOperationsInput | string
+  emailVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  otpHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  otpExpiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   favorites?: Prisma.FavoriteUpdateManyWithoutUserNestedInput
   libraryItems?: Prisma.LibraryItemUpdateManyWithoutUserNestedInput
@@ -465,6 +552,9 @@ export type UserUncheckedUpdateWithoutDownloadsInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
   role?: Prisma.StringFieldUpdateOperationsInput | string
+  emailVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  otpHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  otpExpiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   favorites?: Prisma.FavoriteUncheckedUpdateManyWithoutUserNestedInput
   libraryItems?: Prisma.LibraryItemUncheckedUpdateManyWithoutUserNestedInput
@@ -476,6 +566,9 @@ export type UserCreateWithoutFavoritesInput = {
   name: string
   passwordHash: string
   role?: string
+  emailVerified?: boolean
+  otpHash?: string | null
+  otpExpiresAt?: Date | string | null
   createdAt?: Date | string
   downloads?: Prisma.DownloadLogCreateNestedManyWithoutUserInput
   libraryItems?: Prisma.LibraryItemCreateNestedManyWithoutUserInput
@@ -487,6 +580,9 @@ export type UserUncheckedCreateWithoutFavoritesInput = {
   name: string
   passwordHash: string
   role?: string
+  emailVerified?: boolean
+  otpHash?: string | null
+  otpExpiresAt?: Date | string | null
   createdAt?: Date | string
   downloads?: Prisma.DownloadLogUncheckedCreateNestedManyWithoutUserInput
   libraryItems?: Prisma.LibraryItemUncheckedCreateNestedManyWithoutUserInput
@@ -514,6 +610,9 @@ export type UserUpdateWithoutFavoritesInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
   role?: Prisma.StringFieldUpdateOperationsInput | string
+  emailVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  otpHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  otpExpiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   downloads?: Prisma.DownloadLogUpdateManyWithoutUserNestedInput
   libraryItems?: Prisma.LibraryItemUpdateManyWithoutUserNestedInput
@@ -525,6 +624,9 @@ export type UserUncheckedUpdateWithoutFavoritesInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
   role?: Prisma.StringFieldUpdateOperationsInput | string
+  emailVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  otpHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  otpExpiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   downloads?: Prisma.DownloadLogUncheckedUpdateManyWithoutUserNestedInput
   libraryItems?: Prisma.LibraryItemUncheckedUpdateManyWithoutUserNestedInput
@@ -536,6 +638,9 @@ export type UserCreateWithoutLibraryItemsInput = {
   name: string
   passwordHash: string
   role?: string
+  emailVerified?: boolean
+  otpHash?: string | null
+  otpExpiresAt?: Date | string | null
   createdAt?: Date | string
   downloads?: Prisma.DownloadLogCreateNestedManyWithoutUserInput
   favorites?: Prisma.FavoriteCreateNestedManyWithoutUserInput
@@ -547,6 +652,9 @@ export type UserUncheckedCreateWithoutLibraryItemsInput = {
   name: string
   passwordHash: string
   role?: string
+  emailVerified?: boolean
+  otpHash?: string | null
+  otpExpiresAt?: Date | string | null
   createdAt?: Date | string
   downloads?: Prisma.DownloadLogUncheckedCreateNestedManyWithoutUserInput
   favorites?: Prisma.FavoriteUncheckedCreateNestedManyWithoutUserInput
@@ -574,6 +682,9 @@ export type UserUpdateWithoutLibraryItemsInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
   role?: Prisma.StringFieldUpdateOperationsInput | string
+  emailVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  otpHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  otpExpiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   downloads?: Prisma.DownloadLogUpdateManyWithoutUserNestedInput
   favorites?: Prisma.FavoriteUpdateManyWithoutUserNestedInput
@@ -585,6 +696,9 @@ export type UserUncheckedUpdateWithoutLibraryItemsInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
   role?: Prisma.StringFieldUpdateOperationsInput | string
+  emailVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  otpHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  otpExpiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   downloads?: Prisma.DownloadLogUncheckedUpdateManyWithoutUserNestedInput
   favorites?: Prisma.FavoriteUncheckedUpdateManyWithoutUserNestedInput
@@ -645,6 +759,9 @@ export type UserSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = r
   name?: boolean
   passwordHash?: boolean
   role?: boolean
+  emailVerified?: boolean
+  otpHash?: boolean
+  otpExpiresAt?: boolean
   createdAt?: boolean
   downloads?: boolean | Prisma.User$downloadsArgs<ExtArgs>
   favorites?: boolean | Prisma.User$favoritesArgs<ExtArgs>
@@ -658,6 +775,9 @@ export type UserSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensio
   name?: boolean
   passwordHash?: boolean
   role?: boolean
+  emailVerified?: boolean
+  otpHash?: boolean
+  otpExpiresAt?: boolean
   createdAt?: boolean
 }, ExtArgs["result"]["user"]>
 
@@ -667,6 +787,9 @@ export type UserSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensio
   name?: boolean
   passwordHash?: boolean
   role?: boolean
+  emailVerified?: boolean
+  otpHash?: boolean
+  otpExpiresAt?: boolean
   createdAt?: boolean
 }, ExtArgs["result"]["user"]>
 
@@ -676,10 +799,13 @@ export type UserSelectScalar = {
   name?: boolean
   passwordHash?: boolean
   role?: boolean
+  emailVerified?: boolean
+  otpHash?: boolean
+  otpExpiresAt?: boolean
   createdAt?: boolean
 }
 
-export type UserOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "email" | "name" | "passwordHash" | "role" | "createdAt", ExtArgs["result"]["user"]>
+export type UserOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "email" | "name" | "passwordHash" | "role" | "emailVerified" | "otpHash" | "otpExpiresAt" | "createdAt", ExtArgs["result"]["user"]>
 export type UserInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   downloads?: boolean | Prisma.User$downloadsArgs<ExtArgs>
   favorites?: boolean | Prisma.User$favoritesArgs<ExtArgs>
@@ -702,6 +828,9 @@ export type $UserPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs =
     name: string
     passwordHash: string
     role: string
+    emailVerified: boolean
+    otpHash: string | null
+    otpExpiresAt: Date | null
     createdAt: Date
   }, ExtArgs["result"]["user"]>
   composites: {}
@@ -1134,6 +1263,9 @@ export interface UserFieldRefs {
   readonly name: Prisma.FieldRef<"User", 'String'>
   readonly passwordHash: Prisma.FieldRef<"User", 'String'>
   readonly role: Prisma.FieldRef<"User", 'String'>
+  readonly emailVerified: Prisma.FieldRef<"User", 'Boolean'>
+  readonly otpHash: Prisma.FieldRef<"User", 'String'>
+  readonly otpExpiresAt: Prisma.FieldRef<"User", 'DateTime'>
   readonly createdAt: Prisma.FieldRef<"User", 'DateTime'>
 }
     

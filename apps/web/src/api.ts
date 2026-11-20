@@ -35,7 +35,11 @@ export async function api<T>(path: string, options: RequestInit = {}): Promise<T
   if (current) headers.set("Authorization", `Bearer ${current}`);
   const response = await fetch(path, { ...options, headers });
   const data = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(data.error || "Request failed.");
+  if (!response.ok) {
+    const failure = new Error(data.error || "Request failed.") as Error & { code?: string };
+    failure.code = typeof data.code === "string" ? data.code : undefined;
+    throw failure;
+  }
   return data as T;
 }
 
