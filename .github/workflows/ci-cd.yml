@@ -34,8 +34,9 @@ jobs:
         with:
           context: .
           push: false
-          tags: mercado-e-library:latest
           load: true
+          provenance: false
+          tags: mercado-e-library:latest
 
   wasmer:
     needs: build
