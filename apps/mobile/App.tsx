@@ -1,5 +1,8 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { IBMPlexSans_400Regular } from "@expo-google-fonts/ibm-plex-sans";
+import { Newsreader_500Medium } from "@expo-google-fonts/newsreader";
 import * as FileSystem from "expo-file-system";
+import { useFonts } from "expo-font";
 import * as Sharing from "expo-sharing";
 import { StatusBar } from "expo-status-bar";
 import { useEffect, useState } from "react";
@@ -37,7 +40,8 @@ type Message = { role: "user" | "assistant"; content: string; trace?: Trace[]; p
 type Tab = "catalog" | "library" | "favorites" | "account";
 
 const DEFAULT_URL = Platform.OS === "android" ? "http://10.0.2.2:4000" : "http://localhost:4000";
-const SERIF = Platform.OS === "ios" ? "Georgia" : "serif";
+const SERIF = "Newsreader_500Medium";
+const SANS = "IBMPlexSans_400Regular";
 const TABS: Array<{ id: Tab; label: string }> = [
   { id: "catalog", label: "Catalog" },
   { id: "library", label: "Library" },
@@ -71,6 +75,7 @@ async function request(base: string, path: string, token: string | null, options
 }
 
 export default function App() {
+  const [fontsLoaded] = useFonts({ Newsreader_500Medium, IBMPlexSans_400Regular });
   const [base, setBase] = useState(DEFAULT_URL);
   const [token, setToken] = useState<string | null>(null);
   const [user, setUser] = useState<User | null>(null);
@@ -325,7 +330,7 @@ export default function App() {
   const tileGap = 8;
   const tileWidth = (screenWidth - 32 - tileGap * (columns - 1)) / columns;
 
-  if (!ready) return <View style={styles.center}><ActivityIndicator /></View>;
+  if (!ready || !fontsLoaded) return <View style={styles.center}><ActivityIndicator /></View>;
 
   return (
     <SafeAreaView style={styles.screen}>
@@ -393,6 +398,8 @@ export default function App() {
         <ScrollView style={styles.flex} contentContainerStyle={styles.body}>
           <Pressable onPress={() => { setNote(""); setSelected(null); }}><Text style={styles.link}>Back to the shelf</Text></Pressable>
           <View style={styles.cover}>
+            <View style={styles.spine} />
+            <View style={styles.jacket} />
             <Text style={styles.coverKicker}>{selected.category}</Text>
             <Text style={styles.coverTitle}>{selected.title}</Text>
           </View>
@@ -441,6 +448,8 @@ export default function App() {
               renderItem={({ item }) => (
                 <Pressable style={[styles.tile, { width: tileWidth }]} onPress={() => openBook(item)}>
                   <View style={styles.tileCover}>
+                    <View style={styles.spine} />
+                    <View style={styles.jacket} />
                     <Text style={styles.tileKicker} numberOfLines={1}>{item.category}</Text>
                     <Text style={styles.tileTitle} numberOfLines={2}>{item.title}</Text>
                   </View>
@@ -516,44 +525,46 @@ const styles = StyleSheet.create({
   center: { flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: "#f3eadc" },
   header: { paddingHorizontal: 16, paddingVertical: 16, flexDirection: "row", justifyContent: "space-between", alignItems: "center", gap: 16 },
   brand: { fontFamily: SERIF, fontSize: 22, fontWeight: "500", color: "#1c1712" },
-  heading: { fontSize: 24, color: "#1c1712" },
+  heading: { fontFamily: SANS, fontSize: 24, color: "#1c1712" },
   pageTitle: { fontFamily: SERIF, fontWeight: "500", fontSize: 22, color: "#1c1712" },
   catalogHead: { paddingHorizontal: 16, paddingTop: 16, paddingBottom: 16, gap: 8 },
   filterRow: { gap: 16, alignItems: "center" },
   searchFlush: { margin: 0 },
   form: { width: "100%", maxWidth: 448, gap: 16 },
   field: { gap: 8 },
-  accountInput: { backgroundColor: "#fffaf3", borderRadius: 8, paddingHorizontal: 16, paddingVertical: 8, borderWidth: 1, borderColor: "#e2d5c3", fontSize: 15, color: "#1c1712" },
-  note: { color: "#645c52", fontSize: 13 },
-  quota: { color: "#645c52", fontSize: 13, flexShrink: 1, textAlign: "right" },
-  muted: { color: "#645c52", fontSize: 13 },
-  meta: { color: "#645c52", fontSize: 13, padding: 16 },
-  error: { color: "#8d2f2a", backgroundColor: "#fffaf3", borderColor: "#e7c6c2", borderWidth: 1, borderRadius: 12, marginHorizontal: 16, marginBottom: 16, padding: 16 },
-  empty: { color: "#1c1712", backgroundColor: "#fffaf3", borderColor: "#e2d5c3", borderWidth: 1, borderRadius: 12, margin: 16, padding: 16, fontSize: 15, lineHeight: 22 },
+  accountInput: { fontFamily: SANS, backgroundColor: "#fffaf3", borderRadius: 8, paddingHorizontal: 16, paddingVertical: 8, borderWidth: 1, borderColor: "#e2d5c3", fontSize: 15, color: "#1c1712" },
+  note: { fontFamily: SANS, color: "#645c52", fontSize: 13 },
+  quota: { fontFamily: SANS, color: "#645c52", fontSize: 13, flexShrink: 1, textAlign: "right" },
+  muted: { fontFamily: SANS, color: "#645c52", fontSize: 13 },
+  meta: { fontFamily: SANS, color: "#645c52", fontSize: 13, padding: 16 },
+  error: { fontFamily: SANS, color: "#8d2f2a", backgroundColor: "#fffaf3", borderColor: "#e7c6c2", borderWidth: 1, borderRadius: 12, marginHorizontal: 16, marginBottom: 16, padding: 16 },
+  empty: { fontFamily: SANS, color: "#1c1712", backgroundColor: "#fffaf3", borderColor: "#e2d5c3", borderWidth: 1, borderRadius: 12, margin: 16, padding: 16, fontSize: 15, lineHeight: 22 },
   body: { padding: 16, gap: 16 },
-  bodyText: { color: "#1c1712", fontSize: 15, lineHeight: 22 },
-  copy: { fontSize: 15, lineHeight: 22, color: "#1c1712" },
-  search: { margin: 16, backgroundColor: "#fffaf3", borderRadius: 8, paddingHorizontal: 16, paddingVertical: 8, borderWidth: 1, borderColor: "#e2d5c3", fontSize: 15, color: "#1c1712" },
+  bodyText: { fontFamily: SANS, color: "#1c1712", fontSize: 15, lineHeight: 22 },
+  copy: { fontFamily: SANS, fontSize: 15, lineHeight: 22, color: "#1c1712" },
+  search: { fontFamily: SANS, margin: 16, backgroundColor: "#fffaf3", borderRadius: 8, paddingHorizontal: 16, paddingVertical: 8, borderWidth: 1, borderColor: "#e2d5c3", fontSize: 15, color: "#1c1712" },
   list: { paddingHorizontal: 16, paddingBottom: 16, gap: 8 },
-  tile: { height: 132, backgroundColor: "#fffaf3", borderRadius: 12, borderWidth: 1, borderColor: "#e2d5c3", overflow: "hidden" },
-  tileCover: { flex: 1, backgroundColor: "#1e4636", padding: 8, justifyContent: "space-between" },
-  tileKicker: { color: "#f6f1e7", fontSize: 11, letterSpacing: 0.6, textTransform: "uppercase" },
+  tile: { backgroundColor: "transparent", borderRadius: 4 },
+  tileCover: { height: 104, backgroundColor: "#1e4636", padding: 12, paddingLeft: 14, justifyContent: "space-between", borderRadius: 4, overflow: "hidden" },
+  tileKicker: { fontFamily: SANS, color: "#f6f1e7", fontSize: 11, letterSpacing: 0.6, textTransform: "uppercase" },
   tileTitle: { fontFamily: SERIF, fontWeight: "500", color: "#f6f1e7", fontSize: 15, lineHeight: 18 },
-  tileMeta: { color: "#645c52", fontSize: 13, lineHeight: 16, paddingHorizontal: 8, paddingVertical: 8 },
-  cover: { backgroundColor: "#1e4636", minHeight: 200, padding: 16, justifyContent: "space-between", gap: 16 },
-  coverKicker: { color: "#f6f1e7", fontSize: 13, letterSpacing: 0.6, textTransform: "uppercase" },
+  tileMeta: { fontFamily: SANS, color: "#645c52", fontSize: 13, lineHeight: 16, paddingTop: 8, backgroundColor: "transparent" },
+  cover: { position: "relative", backgroundColor: "#1e4636", minHeight: 200, padding: 16, paddingLeft: 18, justifyContent: "space-between", gap: 16, borderRadius: 4, overflow: "hidden" },
+  spine: { position: "absolute", left: 0, top: 0, bottom: 0, width: 6, backgroundColor: "#143028" },
+  jacket: { position: "absolute", top: 8, left: 8, right: 8, bottom: 8, borderWidth: 1, borderColor: "rgba(255,255,255,0.2)" },
+  coverKicker: { fontFamily: SANS, color: "#f6f1e7", fontSize: 13, letterSpacing: 0.6, textTransform: "uppercase" },
   coverTitle: { fontFamily: SERIF, fontWeight: "500", color: "#f6f1e7", fontSize: 22 },
-  input: { backgroundColor: "#fffaf3", borderRadius: 8, paddingHorizontal: 16, paddingVertical: 8, borderWidth: 1, borderColor: "#e2d5c3", flex: 1, fontSize: 15, color: "#1c1712" },
+  input: { fontFamily: SANS, backgroundColor: "#fffaf3", borderRadius: 8, paddingHorizontal: 16, paddingVertical: 8, borderWidth: 1, borderColor: "#e2d5c3", flex: 1, fontSize: 15, color: "#1c1712" },
   solid: { backgroundColor: "#1e4636", borderRadius: 8, paddingVertical: 8, paddingHorizontal: 16, alignItems: "center", borderWidth: 1, borderColor: "#1e4636" },
-  solidText: { color: "#f6f1e7", fontSize: 15 },
+  solidText: { fontFamily: SANS, color: "#f6f1e7", fontSize: 15 },
   ghost: { borderWidth: 1, borderColor: "#1c1712", borderRadius: 8, paddingVertical: 8, paddingHorizontal: 16, alignItems: "center", backgroundColor: "#fffaf3" },
-  ghostText: { color: "#1c1712", fontSize: 15 },
-  link: { color: "#1c1712", fontSize: 15, textDecorationLine: "underline" },
-  label: { fontSize: 13, color: "#645c52" },
+  ghostText: { fontFamily: SANS, color: "#1c1712", fontSize: 15 },
+  link: { fontFamily: SANS, color: "#1c1712", fontSize: 15, textDecorationLine: "underline" },
+  label: { fontFamily: SANS, fontSize: 13, color: "#645c52" },
   footer: { borderTopWidth: 1, borderColor: "#e2d5c3", backgroundColor: "#f3eadc", paddingTop: 16, paddingHorizontal: 16, gap: 16 },
   tabs: { flexDirection: "row", justifyContent: "space-between", paddingBottom: 8 },
-  tab: { color: "#645c52", fontSize: 13, paddingVertical: 8, borderBottomWidth: 2, borderBottomColor: "transparent" },
-  tabOn: { color: "#1c1712", fontSize: 13, paddingVertical: 8, borderBottomWidth: 2, borderBottomColor: "#1c1712" },
+  tab: { fontFamily: SANS, color: "#645c52", fontSize: 13, paddingVertical: 8, borderBottomWidth: 2, borderBottomColor: "transparent" },
+  tabOn: { fontFamily: SANS, color: "#1c1712", fontSize: 13, paddingVertical: 8, borderBottomWidth: 2, borderBottomColor: "#1c1712" },
   sheetWrap: { flex: 1, justifyContent: "flex-end" },
   backdrop: { flex: 1, backgroundColor: "rgba(28, 23, 18, 0.28)" },
   sheet: { height: "72%", backgroundColor: "#fffaf3", borderTopLeftRadius: 12, borderTopRightRadius: 12, borderWidth: 1, borderColor: "#e2d5c3" },
@@ -561,8 +572,8 @@ const styles = StyleSheet.create({
   message: { gap: 8 },
   bubble: { backgroundColor: "#fffaf3", borderRadius: 12, padding: 16, borderWidth: 1, borderColor: "#e2d5c3" },
   userBubble: { backgroundColor: "#1e4636", borderRadius: 12, padding: 16, alignSelf: "flex-end" },
-  userText: { color: "#f6f1e7", fontSize: 15, lineHeight: 22 },
-  trace: { color: "#645c52", fontSize: 13, borderWidth: 1, borderColor: "#e2d5c3", borderRadius: 8, padding: 8, backgroundColor: "#fffaf3" },
+  userText: { fontFamily: SANS, color: "#f6f1e7", fontSize: 15, lineHeight: 22 },
+  trace: { fontFamily: SANS, color: "#645c52", fontSize: 13, borderWidth: 1, borderColor: "#e2d5c3", borderRadius: 8, padding: 8, backgroundColor: "#fffaf3" },
   row: { flexDirection: "row", flexWrap: "wrap", gap: 8, alignItems: "center" },
   prompts: { paddingHorizontal: 16, paddingBottom: 8, gap: 8 },
   composer: { flexDirection: "row", gap: 8, padding: 16, alignItems: "center", borderTopWidth: 1, borderColor: "#e2d5c3" },
