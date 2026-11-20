@@ -5,7 +5,7 @@ import * as FileSystem from "expo-file-system";
 import { useFonts } from "expo-font";
 import * as Sharing from "expo-sharing";
 import { StatusBar } from "expo-status-bar";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
@@ -53,6 +53,7 @@ const SUGGESTIONS = [
   { label: "Dracula and Frankenstein", text: "Compare Dracula and Frankenstein" },
   { label: "Save Treasure Island", text: "Add Treasure Island to my library" },
 ];
+const CATALOG_PAGE_SIZE = 30;
 const TOOL_LABELS: Record<string, string> = {
   search_books: "Search",
   get_book_details: "Details",
@@ -84,8 +85,11 @@ export default function App() {
   const [query, setQuery] = useState("");
   const [author, setAuthor] = useState("");
   const [category, setCategory] = useState("");
+  const [page, setPage] = useState(1);
+  const [catalogTotal, setCatalogTotal] = useState(0);
   const [categories, setCategories] = useState<string[]>([]);
   const [books, setBooks] = useState<Book[]>([]);
+  const catalogList = useRef<FlatList<Book>>(null);
   const [selected, setSelected] = useState<Book | null>(null);
   const [quota, setQuota] = useState<Quota | null>(null);
   const [error, setError] = useState("");
@@ -142,16 +146,23 @@ export default function App() {
   useEffect(() => {
     if (!ready || tab === "account") return;
     const path = tab === "catalog"
-      ? `/api/books?q=${encodeURIComponent(query)}&author=${encodeURIComponent(author)}&category=${encodeURIComponent(category)}&pageSize=30`
+      ? `/api/books?q=${encodeURIComponent(query)}&author=${encodeURIComponent(author)}&category=${encodeURIComponent(category)}&page=${page}&pageSize=${CATALOG_PAGE_SIZE}`
       : `/api/user/${tab}`;
     if (tab !== "catalog" && !token) {
       setBooks([]);
       return;
     }
     request(base, path, token)
-      .then((data) => setBooks(data.books))
+      .then((data) => {
+        setBooks(data.books);
+        if (tab === "catalog") setCatalogTotal(typeof data.total === "number" ? data.total : 0);
+      })
       .catch((reason) => setError(reason.message));
-  }, [ready, tab, query, author, category, token, base]);
+  }, [ready, tab, query, author, category, page, token, base]);
+
+  useEffect(() => {
+    catalogList.current?.scrollToOffset({ offset: 0, animated: false });
+  }, [page]);
 
   async function signIn() {
     setError("");
@@ -326,6 +337,7 @@ export default function App() {
   }
 
   const { width: screenWidth } = useWindowDimensions();
+  const catalogPages = Math.max(1, Math.ceil(catalogTotal / CATALOG_PAGE_SIZE));
   const columns = screenWidth > 600 ? 3 : 2;
   const tileGap = 8;
   const tileWidth = (screenWidth - 32 - tileGap * (columns - 1)) / columns;
@@ -421,12 +433,12 @@ export default function App() {
           {tab === "catalog" && (
             <View style={styles.catalogHead}>
               <Text style={styles.pageTitle}>Catalog</Text>
-              <TextInput style={[styles.search, styles.searchFlush]} value={query} onChangeText={setQuery} placeholder="Search title, author, or theme" placeholderTextColor="#645c52" />
-              <TextInput style={[styles.search, styles.searchFlush]} value={author} onChangeText={setAuthor} placeholder="Author" placeholderTextColor="#645c52" />
+              <TextInput style={[styles.search, styles.searchFlush]} value={query} onChangeText={(text) => { setQuery(text); setPage(1); }} placeholder="Search title, author, or theme" placeholderTextColor="#645c52" />
+              <TextInput style={[styles.search, styles.searchFlush]} value={author} onChangeText={(text) => { setAuthor(text); setPage(1); }} placeholder="Author" placeholderTextColor="#645c52" />
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterRow}>
-                <Pressable onPress={() => setCategory("")}><Text style={category === "" ? styles.tabOn : styles.tab}>All</Text></Pressable>
+                <Pressable onPress={() => { setCategory(""); setPage(1); }}><Text style={category === "" ? styles.tabOn : styles.tab}>All</Text></Pressable>
                 {categories.map((name) => (
-                  <Pressable key={name} onPress={() => setCategory(name)}><Text style={category === name ? styles.tabOn : styles.tab}>{name}</Text></Pressable>
+                  <Pressable key={name} onPress={() => { setCategory(name); setPage(1); }}><Text style={category === name ? styles.tabOn : styles.tab}>{name}</Text></Pressable>
                 ))}
               </ScrollView>
             </View>
@@ -439,12 +451,24 @@ export default function App() {
             <Text style={styles.empty}>No books match this search.</Text>
           ) : (
             <FlatList
+              ref={catalogList}
               key={columns}
               data={books}
               keyExtractor={(item) => item.id}
               numColumns={columns}
               columnWrapperStyle={{ gap: tileGap }}
               contentContainerStyle={styles.list}
+              ListFooterComponent={tab === "catalog" ? (
+                <View style={styles.pager}>
+                  <Pressable style={[styles.ghost, page <= 1 && styles.pagerOff]} disabled={page <= 1} onPress={() => setPage((value) => Math.max(1, value - 1))}>
+                    <Text style={styles.ghostText}>Previous</Text>
+                  </Pressable>
+                  <Text style={styles.muted}>Page {page} of {catalogPages}</Text>
+                  <Pressable style={[styles.ghost, page >= catalogPages && styles.pagerOff]} disabled={page >= catalogPages} onPress={() => setPage((value) => value + 1)}>
+                    <Text style={styles.ghostText}>Next</Text>
+                  </Pressable>
+                </View>
+              ) : null}
               renderItem={({ item }) => (
                 <Pressable style={[styles.tile, { width: tileWidth }]} onPress={() => openBook(item)}>
                   <View style={styles.tileCover}>
@@ -544,6 +568,8 @@ const styles = StyleSheet.create({
   copy: { fontFamily: SANS, fontSize: 15, lineHeight: 22, color: "#1c1712" },
   search: { fontFamily: SANS, margin: 16, backgroundColor: "#fffaf3", borderRadius: 8, paddingHorizontal: 16, paddingVertical: 8, borderWidth: 1, borderColor: "#e2d5c3", fontSize: 15, color: "#1c1712" },
   list: { paddingHorizontal: 16, paddingBottom: 16, gap: 8 },
+  pager: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", gap: 16, paddingTop: 16 },
+  pagerOff: { opacity: 0.4 },
   tile: { backgroundColor: "transparent", borderRadius: 4 },
   tileCover: { height: 104, backgroundColor: "#1e4636", padding: 12, paddingLeft: 14, justifyContent: "space-between", borderRadius: 4, overflow: "hidden" },
   tileKicker: { fontFamily: SANS, color: "#f6f1e7", fontSize: 11, letterSpacing: 0.6, textTransform: "uppercase" },
