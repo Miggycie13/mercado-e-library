@@ -24,7 +24,7 @@ h2 { font-size: 18px; font-weight: 520; line-height: 1.3; }
 .shell { height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
 .topbar {
   display: grid;
-  grid-template-columns: auto 1fr auto;
+  grid-template-columns: auto auto 1fr;
   grid-template-areas: "brand nav account";
   align-items: center;
   gap: 16px 24px;
@@ -51,7 +51,7 @@ h2 { font-size: 18px; font-weight: 520; line-height: 1.3; }
   color: inherit;
 }
 .nav a.active { border-bottom-color: var(--ink); }
-.account { display: flex; align-items: center; gap: 16px; }
+.account { display: flex; align-items: center; gap: 16px; justify-self: start; }
 
 .solid, .ghost, .textish {
   border-radius: 8px;
@@ -70,6 +70,7 @@ button:disabled { opacity: 0.45; cursor: not-allowed; }
 
 .scroller { flex: 1; overflow: auto; }
 .page { width: min(1120px, calc(100% - 64px)); margin: 0 auto; padding: 32px 0; }
+.page:has(.catalog-title) { width: min(1440px, calc(100% - 64px)); }
 .hero { display: grid; grid-template-columns: 1.4fr 0.8fr; gap: 24px; align-items: start; margin-bottom: 24px; }
 .hero h1 { font-family: Newsreader, serif; font-size: 40px; font-weight: 560; letter-spacing: -0.03em; line-height: 1.05; }
 .book-title { font-family: Newsreader, serif; font-size: 28px; font-weight: 560; letter-spacing: -0.03em; line-height: 1.15; }
@@ -99,6 +100,7 @@ textarea { min-height: 96px; resize: vertical; }
 ::placeholder { color: var(--muted); opacity: 1; }
 .filters input, .filters select { flex: 1 1 220px; min-width: 0; }
 .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 16px; align-items: stretch; }
+.page:has(.catalog-title) .grid { grid-template-columns: repeat(5, minmax(0, 1fr)); }
 .book {
   overflow: visible;
   text-decoration: none;
@@ -116,7 +118,7 @@ textarea { min-height: 96px; resize: vertical; }
   padding: 16px;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
+  justify-content: flex-start;
   gap: 8px;
   background: var(--green);
   color: #f6f1e7;
@@ -225,10 +227,12 @@ td, th { text-align: left; padding: 8px 0; border-bottom: 1px solid var(--line);
   .account { flex-direction: row; flex-wrap: nowrap; align-items: center; gap: 8px; }
   .quota { white-space: nowrap; }
   .page { width: min(1120px, calc(100% - 32px)); padding: 24px 0 32px; }
+  .page:has(.catalog-title) { width: min(1440px, calc(100% - 32px)); }
   .librarian-bar { padding: 16px; }
   .chat-panel { left: 16px; right: 16px; width: auto; bottom: 80px; height: min(420px, calc(100vh - 280px)); }
   .hero, .detail, .split { grid-template-columns: 1fr; }
   .stats { grid-template-columns: 1fr 1fr; }
   .hero h1, .catalog-title { font-size: 28px; }
   .filters { flex-direction: column; }
+  .page:has(.catalog-title) .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
