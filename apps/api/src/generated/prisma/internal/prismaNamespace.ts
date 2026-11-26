@@ -844,6 +844,7 @@ export const BookScalarFieldEnum = {
   language: 'language',
   description: 'description',
   sourceUrl: 'sourceUrl',
+  coverUrl: 'coverUrl',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const

@@ -141,6 +141,9 @@ textarea { min-height: 96px; resize: vertical; }
   border: 1px solid rgba(255, 255, 255, 0.2);
   pointer-events: none;
 }
+.cover.has-photo { padding: 0; }
+.cover.has-photo::before, .cover.has-photo::after { content: none; }
+.cover-photo { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
 .cover span, .cover strong { position: relative; z-index: 1; }
 .cover span { font-size: 13px; letter-spacing: 0.06em; text-transform: uppercase; }
 .cover strong {

@@ -3,7 +3,7 @@ import { createApp } from "./app";
 import { aiMode } from "./ai/agent";
 import { flushDatabase } from "./lib/sqlite";
 import { prisma } from "./lib/prisma";
-import { seedDatabase } from "./seed";
+import { fillBookCovers, seedDatabase } from "./seed";
 
 async function main() {
   const port = Number(process.env.PORT || 4000);
@@ -16,6 +16,9 @@ async function main() {
   });
   await seedDatabase();
   flushDatabase();
+  void fillBookCovers().catch((error) => {
+    console.error(error instanceof Error ? error.message : "Cover lookup failed.");
+  });
 }
 
 main().catch(async (error) => {

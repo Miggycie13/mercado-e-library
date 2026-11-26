@@ -60,3 +60,44 @@ export async function seedDatabase() {
   console.log(`Catalog ready with ${count} books.`);
   return count;
 }
+
+const COVER_AGENT = "The Emerald Archive (mercado-e-library)";
+
+async function lookupCover(title: string, author: string) {
+  const url = new URL("https://openlibrary.org/search.json");
+  url.searchParams.set("title", title);
+  url.searchParams.set("author", author);
+  url.searchParams.set("limit", "5");
+  url.searchParams.set("fields", "cover_i");
+  try {
+    const response = await fetch(url, {
+      headers: { Accept: "application/json", "User-Agent": COVER_AGENT },
+      signal: AbortSignal.timeout(15000),
+    });
+    if (!response.ok) return "";
+    const data = (await response.json()) as { docs?: Array<{ cover_i?: number }> };
+    const cover = data.docs?.find((doc) => typeof doc.cover_i === "number" && doc.cover_i > 0)?.cover_i;
+    return cover ? `https://covers.openlibrary.org/b/id/${cover}-M.jpg` : "";
+  } catch {
+    return "";
+  }
+}
+
+export async function fillBookCovers() {
+  const pending = await prisma.book.findMany({
+    where: { coverUrl: null },
+    select: { id: true, title: true, author: true },
+    orderBy: { title: "asc" },
+  });
+  pending.sort((left, right) => Number(right.title === "A Christmas Carol") - Number(left.title === "A Christmas Carol"));
+  let saved = 0;
+  let empty = 0;
+  for (const book of pending) {
+    const coverUrl = await lookupCover(book.title, book.author);
+    await prisma.book.update({ where: { id: book.id }, data: { coverUrl } });
+    if (coverUrl) saved += 1;
+    else empty += 1;
+    await new Promise((resolve) => setTimeout(resolve, 250));
+  }
+  console.log(`Covers saved: ${saved}. Books with no cover: ${empty}.`);
+}

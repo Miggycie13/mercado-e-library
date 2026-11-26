@@ -9,6 +9,7 @@ import { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
+  Image,
   Modal,
   Platform,
   Pressable,
@@ -30,6 +31,7 @@ type Book = {
   year: number;
   description: string;
   sourceUrl?: string | null;
+  coverUrl?: string | null;
   inLibrary?: boolean;
   isFavorite?: boolean;
 };
@@ -63,6 +65,44 @@ const TOOL_LABELS: Record<string, string> = {
 
 function toolLabel(name: string) {
   return TOOL_LABELS[name] ?? "Search";
+}
+
+function coverSource(url?: string | null) {
+  return url && /^https?:\/\//i.test(url) ? url : "";
+}
+
+function CoverFace({ book, detail = false }: { book: Book; detail?: boolean }) {
+  const source = coverSource(book.coverUrl);
+  const [failed, setFailed] = useState(false);
+  if (source && !failed) {
+    return (
+      <Image
+        source={{ uri: source }}
+        style={detail ? styles.coverPhoto : styles.tilePhoto}
+        resizeMode="cover"
+        onError={() => setFailed(true)}
+        accessibilityLabel={book.title}
+      />
+    );
+  }
+  if (detail) {
+    return (
+      <View style={styles.cover}>
+        <View style={styles.spine} />
+        <View style={styles.jacket} />
+        <Text style={styles.coverKicker}>{book.category}</Text>
+        <Text style={styles.coverTitle}>{book.title}</Text>
+      </View>
+    );
+  }
+  return (
+    <View style={styles.tileCover}>
+      <View style={styles.spine} />
+      <View style={styles.jacket} />
+      <Text style={styles.tileKicker} numberOfLines={1}>{book.category}</Text>
+      <Text style={styles.tileTitle} numberOfLines={2}>{book.title}</Text>
+    </View>
+  );
 }
 
 async function request(base: string, path: string, token: string | null, options: RequestInit = {}) {
@@ -459,12 +499,7 @@ export default function App() {
       ) : selected ? (
         <ScrollView style={styles.flex} contentContainerStyle={styles.body}>
           <Pressable onPress={() => { setNote(""); setSelected(null); }}><Text style={styles.link}>Back to the shelf</Text></Pressable>
-          <View style={styles.cover}>
-            <View style={styles.spine} />
-            <View style={styles.jacket} />
-            <Text style={styles.coverKicker}>{selected.category}</Text>
-            <Text style={styles.coverTitle}>{selected.title}</Text>
-          </View>
+          <CoverFace book={selected} detail />
           <Text style={styles.meta}>{selected.author} · {selected.year}</Text>
           <Text style={styles.copy}>{selected.description}</Text>
           {note ? <Text style={styles.note}>{note}</Text> : null}
@@ -521,12 +556,7 @@ export default function App() {
               ) : null}
               renderItem={({ item }) => (
                 <Pressable style={[styles.tile, { width: tileWidth }]} onPress={() => openBook(item)}>
-                  <View style={styles.tileCover}>
-                    <View style={styles.spine} />
-                    <View style={styles.jacket} />
-                    <Text style={styles.tileKicker} numberOfLines={1}>{item.category}</Text>
-                    <Text style={styles.tileTitle} numberOfLines={2}>{item.title}</Text>
-                  </View>
+                  <CoverFace book={item} />
                   <Text style={styles.tileMeta} numberOfLines={1}>{item.author} · {item.year}</Text>
                 </Pressable>
               )}
@@ -622,10 +652,12 @@ const styles = StyleSheet.create({
   pagerOff: { opacity: 0.4 },
   tile: { backgroundColor: "transparent", borderRadius: 4 },
   tileCover: { height: 104, backgroundColor: "#1e4636", padding: 12, paddingLeft: 14, justifyContent: "space-between", borderRadius: 4, overflow: "hidden" },
+  tilePhoto: { height: 104, width: "100%", borderRadius: 4, backgroundColor: "#1e4636" },
   tileKicker: { fontFamily: SANS, color: "#f6f1e7", fontSize: 11, letterSpacing: 0.6, textTransform: "uppercase" },
   tileTitle: { fontFamily: SERIF, fontWeight: "500", color: "#f6f1e7", fontSize: 15, lineHeight: 18 },
   tileMeta: { fontFamily: SANS, color: "#645c52", fontSize: 13, lineHeight: 16, paddingTop: 8, backgroundColor: "transparent" },
   cover: { position: "relative", backgroundColor: "#1e4636", minHeight: 200, padding: 16, paddingLeft: 18, justifyContent: "space-between", gap: 16, borderRadius: 4, overflow: "hidden" },
+  coverPhoto: { width: "100%", height: 200, borderRadius: 4, backgroundColor: "#1e4636" },
   spine: { position: "absolute", left: 0, top: 0, bottom: 0, width: 6, backgroundColor: "#143028" },
   jacket: { position: "absolute", top: 8, left: 8, right: 8, bottom: 8, borderWidth: 1, borderColor: "rgba(255,255,255,0.2)" },
   coverKicker: { fontFamily: SANS, color: "#f6f1e7", fontSize: 13, letterSpacing: 0.6, textTransform: "uppercase" },

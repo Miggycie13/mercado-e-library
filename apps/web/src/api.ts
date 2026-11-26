@@ -9,6 +9,7 @@ export type Book = {
   language: string;
   description: string;
   sourceUrl?: string | null;
+  coverUrl?: string | null;
   inLibrary?: boolean;
   isFavorite?: boolean;
 };

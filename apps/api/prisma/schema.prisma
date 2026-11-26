@@ -33,6 +33,7 @@ model Book {
   language     String        @default("English")
   description  String
   sourceUrl    String?
+  coverUrl     String?
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
   downloads    DownloadLog[]

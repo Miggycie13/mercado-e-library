@@ -43,6 +43,7 @@ export type BookMinAggregateOutputType = {
   language: string | null
   description: string | null
   sourceUrl: string | null
+  coverUrl: string | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -56,6 +57,7 @@ export type BookMaxAggregateOutputType = {
   language: string | null
   description: string | null
   sourceUrl: string | null
+  coverUrl: string | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -69,6 +71,7 @@ export type BookCountAggregateOutputType = {
   language: number
   description: number
   sourceUrl: number
+  coverUrl: number
   createdAt: number
   updatedAt: number
   _all: number
@@ -92,6 +95,7 @@ export type BookMinAggregateInputType = {
   language?: true
   description?: true
   sourceUrl?: true
+  coverUrl?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -105,6 +109,7 @@ export type BookMaxAggregateInputType = {
   language?: true
   description?: true
   sourceUrl?: true
+  coverUrl?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -118,6 +123,7 @@ export type BookCountAggregateInputType = {
   language?: true
   description?: true
   sourceUrl?: true
+  coverUrl?: true
   createdAt?: true
   updatedAt?: true
   _all?: true
@@ -218,6 +224,7 @@ export type BookGroupByOutputType = {
   language: string
   description: string
   sourceUrl: string | null
+  coverUrl: string | null
   createdAt: Date
   updatedAt: Date
   _count: BookCountAggregateOutputType | null
@@ -254,6 +261,7 @@ export type BookWhereInput = {
   language?: Prisma.StringFilter<"Book"> | string
   description?: Prisma.StringFilter<"Book"> | string
   sourceUrl?: Prisma.StringNullableFilter<"Book"> | string | null
+  coverUrl?: Prisma.StringNullableFilter<"Book"> | string | null
   createdAt?: Prisma.DateTimeFilter<"Book"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Book"> | Date | string
   downloads?: Prisma.DownloadLogListRelationFilter
@@ -270,6 +278,7 @@ export type BookOrderByWithRelationInput = {
   language?: Prisma.SortOrder
   description?: Prisma.SortOrder
   sourceUrl?: Prisma.SortOrderInput | Prisma.SortOrder
+  coverUrl?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   downloads?: Prisma.DownloadLogOrderByRelationAggregateInput
@@ -290,6 +299,7 @@ export type BookWhereUniqueInput = Prisma.AtLeast<{
   language?: Prisma.StringFilter<"Book"> | string
   description?: Prisma.StringFilter<"Book"> | string
   sourceUrl?: Prisma.StringNullableFilter<"Book"> | string | null
+  coverUrl?: Prisma.StringNullableFilter<"Book"> | string | null
   createdAt?: Prisma.DateTimeFilter<"Book"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Book"> | Date | string
   downloads?: Prisma.DownloadLogListRelationFilter
@@ -306,6 +316,7 @@ export type BookOrderByWithAggregationInput = {
   language?: Prisma.SortOrder
   description?: Prisma.SortOrder
   sourceUrl?: Prisma.SortOrderInput | Prisma.SortOrder
+  coverUrl?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   _count?: Prisma.BookCountOrderByAggregateInput
@@ -327,6 +338,7 @@ export type BookScalarWhereWithAggregatesInput = {
   language?: Prisma.StringWithAggregatesFilter<"Book"> | string
   description?: Prisma.StringWithAggregatesFilter<"Book"> | string
   sourceUrl?: Prisma.StringNullableWithAggregatesFilter<"Book"> | string | null
+  coverUrl?: Prisma.StringNullableWithAggregatesFilter<"Book"> | string | null
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"Book"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"Book"> | Date | string
 }
@@ -340,6 +352,7 @@ export type BookCreateInput = {
   language?: string
   description: string
   sourceUrl?: string | null
+  coverUrl?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   downloads?: Prisma.DownloadLogCreateNestedManyWithoutBookInput
@@ -356,6 +369,7 @@ export type BookUncheckedCreateInput = {
   language?: string
   description: string
   sourceUrl?: string | null
+  coverUrl?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   downloads?: Prisma.DownloadLogUncheckedCreateNestedManyWithoutBookInput
@@ -372,6 +386,7 @@ export type BookUpdateInput = {
   language?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.StringFieldUpdateOperationsInput | string
   sourceUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  coverUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   downloads?: Prisma.DownloadLogUpdateManyWithoutBookNestedInput
@@ -388,6 +403,7 @@ export type BookUncheckedUpdateInput = {
   language?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.StringFieldUpdateOperationsInput | string
   sourceUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  coverUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   downloads?: Prisma.DownloadLogUncheckedUpdateManyWithoutBookNestedInput
@@ -404,6 +420,7 @@ export type BookCreateManyInput = {
   language?: string
   description: string
   sourceUrl?: string | null
+  coverUrl?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -417,6 +434,7 @@ export type BookUpdateManyMutationInput = {
   language?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.StringFieldUpdateOperationsInput | string
   sourceUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  coverUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -430,6 +448,7 @@ export type BookUncheckedUpdateManyInput = {
   language?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.StringFieldUpdateOperationsInput | string
   sourceUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  coverUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -448,6 +467,7 @@ export type BookCountOrderByAggregateInput = {
   language?: Prisma.SortOrder
   description?: Prisma.SortOrder
   sourceUrl?: Prisma.SortOrder
+  coverUrl?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -465,6 +485,7 @@ export type BookMaxOrderByAggregateInput = {
   language?: Prisma.SortOrder
   description?: Prisma.SortOrder
   sourceUrl?: Prisma.SortOrder
+  coverUrl?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -478,6 +499,7 @@ export type BookMinOrderByAggregateInput = {
   language?: Prisma.SortOrder
   description?: Prisma.SortOrder
   sourceUrl?: Prisma.SortOrder
+  coverUrl?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -550,6 +572,7 @@ export type BookCreateWithoutDownloadsInput = {
   language?: string
   description: string
   sourceUrl?: string | null
+  coverUrl?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   favorites?: Prisma.FavoriteCreateNestedManyWithoutBookInput
@@ -565,6 +588,7 @@ export type BookUncheckedCreateWithoutDownloadsInput = {
   language?: string
   description: string
   sourceUrl?: string | null
+  coverUrl?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   favorites?: Prisma.FavoriteUncheckedCreateNestedManyWithoutBookInput
@@ -596,6 +620,7 @@ export type BookUpdateWithoutDownloadsInput = {
   language?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.StringFieldUpdateOperationsInput | string
   sourceUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  coverUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   favorites?: Prisma.FavoriteUpdateManyWithoutBookNestedInput
@@ -611,6 +636,7 @@ export type BookUncheckedUpdateWithoutDownloadsInput = {
   language?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.StringFieldUpdateOperationsInput | string
   sourceUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  coverUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   favorites?: Prisma.FavoriteUncheckedUpdateManyWithoutBookNestedInput
@@ -626,6 +652,7 @@ export type BookCreateWithoutFavoritesInput = {
   language?: string
   description: string
   sourceUrl?: string | null
+  coverUrl?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   downloads?: Prisma.DownloadLogCreateNestedManyWithoutBookInput
@@ -641,6 +668,7 @@ export type BookUncheckedCreateWithoutFavoritesInput = {
   language?: string
   description: string
   sourceUrl?: string | null
+  coverUrl?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   downloads?: Prisma.DownloadLogUncheckedCreateNestedManyWithoutBookInput
@@ -672,6 +700,7 @@ export type BookUpdateWithoutFavoritesInput = {
   language?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.StringFieldUpdateOperationsInput | string
   sourceUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  coverUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   downloads?: Prisma.DownloadLogUpdateManyWithoutBookNestedInput
@@ -687,6 +716,7 @@ export type BookUncheckedUpdateWithoutFavoritesInput = {
   language?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.StringFieldUpdateOperationsInput | string
   sourceUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  coverUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   downloads?: Prisma.DownloadLogUncheckedUpdateManyWithoutBookNestedInput
@@ -702,6 +732,7 @@ export type BookCreateWithoutLibraryItemsInput = {
   language?: string
   description: string
   sourceUrl?: string | null
+  coverUrl?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   downloads?: Prisma.DownloadLogCreateNestedManyWithoutBookInput
@@ -717,6 +748,7 @@ export type BookUncheckedCreateWithoutLibraryItemsInput = {
   language?: string
   description: string
   sourceUrl?: string | null
+  coverUrl?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   downloads?: Prisma.DownloadLogUncheckedCreateNestedManyWithoutBookInput
@@ -748,6 +780,7 @@ export type BookUpdateWithoutLibraryItemsInput = {
   language?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.StringFieldUpdateOperationsInput | string
   sourceUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  coverUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   downloads?: Prisma.DownloadLogUpdateManyWithoutBookNestedInput
@@ -763,6 +796,7 @@ export type BookUncheckedUpdateWithoutLibraryItemsInput = {
   language?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.StringFieldUpdateOperationsInput | string
   sourceUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  coverUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   downloads?: Prisma.DownloadLogUncheckedUpdateManyWithoutBookNestedInput
@@ -827,6 +861,7 @@ export type BookSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = r
   language?: boolean
   description?: boolean
   sourceUrl?: boolean
+  coverUrl?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   downloads?: boolean | Prisma.Book$downloadsArgs<ExtArgs>
@@ -844,6 +879,7 @@ export type BookSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensio
   language?: boolean
   description?: boolean
   sourceUrl?: boolean
+  coverUrl?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }, ExtArgs["result"]["book"]>
@@ -857,6 +893,7 @@ export type BookSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensio
   language?: boolean
   description?: boolean
   sourceUrl?: boolean
+  coverUrl?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }, ExtArgs["result"]["book"]>
@@ -870,11 +907,12 @@ export type BookSelectScalar = {
   language?: boolean
   description?: boolean
   sourceUrl?: boolean
+  coverUrl?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type BookOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "title" | "author" | "category" | "year" | "language" | "description" | "sourceUrl" | "createdAt" | "updatedAt", ExtArgs["result"]["book"]>
+export type BookOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "title" | "author" | "category" | "year" | "language" | "description" | "sourceUrl" | "coverUrl" | "createdAt" | "updatedAt", ExtArgs["result"]["book"]>
 export type BookInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   downloads?: boolean | Prisma.Book$downloadsArgs<ExtArgs>
   favorites?: boolean | Prisma.Book$favoritesArgs<ExtArgs>
@@ -900,6 +938,7 @@ export type $BookPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs =
     language: string
     description: string
     sourceUrl: string | null
+    coverUrl: string | null
     createdAt: Date
     updatedAt: Date
   }, ExtArgs["result"]["book"]>
@@ -1336,6 +1375,7 @@ export interface BookFieldRefs {
   readonly language: Prisma.FieldRef<"Book", 'String'>
   readonly description: Prisma.FieldRef<"Book", 'String'>
   readonly sourceUrl: Prisma.FieldRef<"Book", 'String'>
+  readonly coverUrl: Prisma.FieldRef<"Book", 'String'>
   readonly createdAt: Prisma.FieldRef<"Book", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"Book", 'DateTime'>
 }

@@ -99,6 +99,7 @@ export function bookSummary(book: {
   category: string;
   year: number;
   description: string;
+  coverUrl?: string | null;
 }) {
   return {
     id: book.id,
@@ -107,5 +108,6 @@ export function bookSummary(book: {
     category: book.category,
     year: book.year,
     description: book.description,
+    coverUrl: book.coverUrl ?? null,
   };
 }

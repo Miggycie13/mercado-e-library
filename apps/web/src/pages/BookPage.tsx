@@ -46,7 +46,7 @@ export function BookPage() {
 
   return (
     <article className="detail">
-      <Cover title={book.title} category={book.category} />
+      <Cover title={book.title} category={book.category} coverUrl={book.coverUrl} />
       <div className="detail-copy">
         <h1 className="book-title">{book.title}</h1>
         <p>{book.author} · {book.year}</p>

@@ -58,6 +58,7 @@ CREATE TABLE IF NOT EXISTS "Book" (
   "language" TEXT NOT NULL DEFAULT 'English',
   "description" TEXT NOT NULL,
   "sourceUrl" TEXT,
+  "coverUrl" TEXT,
   "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   "updatedAt" DATETIME NOT NULL
 );
@@ -169,6 +170,10 @@ function declaredTypes(db: SqlDatabase) {
     for (const match of sql.matchAll(/"([^"]+)"\s+(DATETIME|INTEGER|TEXT|BOOLEAN|REAL|BLOB|NUMERIC|BIGINT)/gi)) {
       types.set(match[1], match[2].toUpperCase());
     }
+  }
+  const books = db.exec('PRAGMA table_info("Book")');
+  for (const row of books[0]?.values || []) {
+    if (String(row[1]) === "coverUrl" && !types.has("coverUrl")) types.set("coverUrl", "TEXT");
   }
   return types;
 }
@@ -387,6 +392,7 @@ async function openDatabase(file: string) {
     `ALTER TABLE "User" ADD COLUMN "emailVerified" BOOLEAN NOT NULL DEFAULT 1`,
     `ALTER TABLE "User" ADD COLUMN "otpHash" TEXT`,
     `ALTER TABLE "User" ADD COLUMN "otpExpiresAt" DATETIME`,
+    `ALTER TABLE "Book" ADD COLUMN "coverUrl" TEXT`,
   ]) {
     try {
       db.exec(statement);
