@@ -30,10 +30,10 @@ export function Shelf({ kind }: { kind: "library" | "favorites" }) {
 
   return (
     <div className="stack">
-      <h1>{title}</h1>
+      <h1 className="catalog-title">{title}</h1>
       {error && <p className="error">{error}</p>}
       {books.length === 0 ? (
-        <p className="empty">Nothing here yet. Ask the librarian to save a book, then confirm it.</p>
+        <p className="empty">{kind === "library" ? "Nothing here yet. Open a book and choose Add to My Library." : "Nothing here yet. Open a book and choose Favorite."}</p>
       ) : (
         <>
           <div className="filters">
