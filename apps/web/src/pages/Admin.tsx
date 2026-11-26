@@ -13,9 +13,11 @@ type Analytics = {
 
 const empty = { title: "", author: "", category: "Fiction", year: 1900, description: "", sourceUrl: "" };
 
+const RECORD_PAGE = 20;
+
 function dayLabel(day: string) {
   const [year, month, date] = day.split("-").map(Number);
-  return new Date(year, month - 1, date).toLocaleDateString(undefined, { month: "short", day: "numeric" });
+  return new Date(year, month - 1, date).toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }
 
 export function Admin() {
@@ -25,6 +27,8 @@ export function Admin() {
   const [form, setForm] = useState(empty);
   const [editing, setEditing] = useState<string | null>(null);
   const [recordQuery, setRecordQuery] = useState("");
+  const [recordPage, setRecordPage] = useState(1);
+  const [pendingDelete, setPendingDelete] = useState<string | null>(null);
   const [error, setError] = useState("");
 
   function load() {
@@ -42,6 +46,10 @@ export function Admin() {
   const maxCategory = Math.max(1, ...(analytics?.byCategory.map((row) => row.count) || [1]));
   const query = recordQuery.trim().toLowerCase();
   const visibleBooks = books.filter((book) => !query || `${book.title} ${book.author}`.toLowerCase().includes(query));
+  const recordPages = Math.max(1, Math.ceil(visibleBooks.length / RECORD_PAGE));
+  const page = Math.min(recordPage, recordPages);
+  const shownBooks = visibleBooks.slice((page - 1) * RECORD_PAGE, page * RECORD_PAGE);
+  const latestDay = analytics?.daily[analytics.daily.length - 1];
 
   async function save(event: React.FormEvent) {
     event.preventDefault();
@@ -87,6 +95,7 @@ export function Admin() {
             </div>
             <div className="panel">
               <h2>Downloads, last 14 days</h2>
+              {latestDay && <p className="muted">{latestDay.downloads} downloads on {dayLabel(latestDay.day)}</p>}
               <div className="columns">
                 {analytics.daily.map((row) => (
                   <div className="column" key={row.day}>
@@ -152,18 +161,35 @@ export function Admin() {
         </form>
         <div className="panel admin-list">
           <h2>Catalog records</h2>
-          <input className="record-search" value={recordQuery} onChange={(event) => setRecordQuery(event.target.value)} placeholder="Search title or author" aria-label="Search catalog records" />
+          <input className="record-search" value={recordQuery} onChange={(event) => { setRecordQuery(event.target.value); setRecordPage(1); }} placeholder="Search title or author" aria-label="Search catalog records" />
+          {books.length > 0 && <p className="muted">{shownBooks.length} of {visibleBooks.length} records.</p>}
           {query && visibleBooks.length === 0 && <p className="muted">No records match this search.</p>}
-          {visibleBooks.map((book) => (
+          {shownBooks.map((book) => (
             <div key={book.id} className="row-actions">
               <span className="row-copy">
                 <span className="row-title">{book.title}</span>
                 <span className="row-author">{book.author}</span>
               </span>
-              <button className="textish" onClick={() => { setEditing(book.id); setForm({ title: book.title, author: book.author, category: book.category, year: book.year, description: book.description, sourceUrl: book.sourceUrl || "" }); }}>Edit</button>
-              <button className="textish" onClick={async () => { await api(`/api/admin/books/${book.id}`, { method: "DELETE" }); load(); }}>Delete</button>
+              {pendingDelete === book.id ? (
+                <>
+                  <span className="row-author">Delete this book?</span>
+                  <button className="textish" onClick={async () => { await api(`/api/admin/books/${book.id}`, { method: "DELETE" }); setPendingDelete(null); load(); }}>Delete</button>
+                  <button className="textish" type="button" onClick={() => setPendingDelete(null)}>Cancel</button>
+                </>
+              ) : (
+                <>
+                  <button className="textish" onClick={() => { setPendingDelete(null); setEditing(book.id); setForm({ title: book.title, author: book.author, category: book.category, year: book.year, description: book.description, sourceUrl: book.sourceUrl || "" }); }}>Edit</button>
+                  <button className="textish" type="button" onClick={() => setPendingDelete(book.id)}>Delete</button>
+                </>
+              )}
             </div>
           ))}
+          {recordPages > 1 && (
+            <div className="actions">
+              <button className="ghost" type="button" disabled={page <= 1} onClick={() => setRecordPage(page - 1)}>Previous</button>
+              <button className="ghost" type="button" disabled={page >= recordPages} onClick={() => setRecordPage(page + 1)}>Next</button>
+            </div>
+          )}
         </div>
       </section>
     </div>
