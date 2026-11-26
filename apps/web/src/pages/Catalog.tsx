@@ -112,6 +112,7 @@ export function Catalog() {
         {data?.books.map((book) => (
           <Link className="book" key={book.id} to={`/books/${book.id}`}>
             <Cover title={book.title} category={book.category} coverUrl={book.coverUrl} />
+            <div className="book-name">{book.title}</div>
             <div className="meta">{book.author} · {book.year}</div>
           </Link>
         ))}

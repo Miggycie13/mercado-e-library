@@ -169,7 +169,19 @@ textarea { min-height: 96px; resize: vertical; }
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
-.book .meta { padding: 8px 2px 0; background: transparent; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.book-name {
+  font-family: Newsreader, serif;
+  font-size: 18px;
+  font-weight: 560;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+  margin-top: 8px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.book .meta { padding: 2px 2px 0; background: transparent; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .detail { display: grid; grid-template-columns: 240px 1fr; gap: 24px; align-items: start; background: transparent; border: 0; padding: 0; }
 .detail .cover { height: 280px; min-height: 280px; border-radius: 4px; }
 .detail-copy { display: grid; gap: 16px; align-content: start; }
