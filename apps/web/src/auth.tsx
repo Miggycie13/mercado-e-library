@@ -1,12 +1,12 @@
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
-import { api, type User } from "./api";
+import { api, clearToken, readToken, storeToken, type User } from "./api";
 
 type AuthValue = {
   user: User | null;
   ready: boolean;
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string, remember?: boolean) => Promise<void>;
   register: (name: string, email: string, password: string) => Promise<{ pending: boolean }>;
-  confirm: (email: string, code: string) => Promise<void>;
+  confirm: (email: string, code: string, remember?: boolean) => Promise<void>;
   sendCode: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
 };
@@ -18,26 +18,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    const token = localStorage.getItem("elibrary.token");
+    const token = readToken();
     if (!token) {
       setReady(true);
       return;
     }
     api<{ user: User }>("/api/auth/me")
       .then((data) => setUser(data.user))
-      .catch(() => localStorage.removeItem("elibrary.token"))
+      .catch(() => clearToken())
       .finally(() => setReady(true));
   }, []);
 
   const value = useMemo<AuthValue>(() => ({
     user,
     ready,
-    async login(email, password) {
+    async login(email, password, remember = true) {
       const data = await api<{ token: string; user: User }>("/api/auth/login", {
         method: "POST",
         body: JSON.stringify({ email, password }),
       });
-      localStorage.setItem("elibrary.token", data.token);
+      storeToken(data.token, remember);
       setUser(data.user);
     },
     async register(name, email, password) {
@@ -46,16 +46,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         body: JSON.stringify({ name, email, password }),
       });
       if (data.pending || !data.token || !data.user) return { pending: true };
-      localStorage.setItem("elibrary.token", data.token);
+      storeToken(data.token, true);
       setUser(data.user);
       return { pending: false };
     },
-    async confirm(email, code) {
+    async confirm(email, code, remember = true) {
       const data = await api<{ token: string; user: User }>("/api/auth/verify", {
         method: "POST",
         body: JSON.stringify({ email, code }),
       });
-      localStorage.setItem("elibrary.token", data.token);
+      storeToken(data.token, remember);
       setUser(data.user);
     },
     async sendCode(email, password) {
@@ -66,7 +66,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     },
     async logout() {
       await api("/api/auth/logout", { method: "POST" }).catch(() => undefined);
-      localStorage.removeItem("elibrary.token");
+      clearToken();
       setUser(null);
     },
   }), [user, ready]);

@@ -25,8 +25,29 @@ export type ChatResponse = {
   mode: "openai" | "local";
 };
 
+const TOKEN_KEY = "elibrary.token";
+
+export function readToken() {
+  return sessionStorage.getItem(TOKEN_KEY) || localStorage.getItem(TOKEN_KEY);
+}
+
+export function storeToken(value: string, remember: boolean) {
+  if (remember) {
+    sessionStorage.removeItem(TOKEN_KEY);
+    localStorage.setItem(TOKEN_KEY, value);
+    return;
+  }
+  localStorage.removeItem(TOKEN_KEY);
+  sessionStorage.setItem(TOKEN_KEY, value);
+}
+
+export function clearToken() {
+  localStorage.removeItem(TOKEN_KEY);
+  sessionStorage.removeItem(TOKEN_KEY);
+}
+
 function token() {
-  return localStorage.getItem("elibrary.token");
+  return readToken();
 }
 
 export async function api<T>(path: string, options: RequestInit = {}): Promise<T> {

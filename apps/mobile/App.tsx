@@ -682,7 +682,7 @@ const styles = StyleSheet.create({
   footer: { borderTopWidth: 1, borderColor: "#e2d5c3", backgroundColor: "#f3eadc", paddingTop: 16, paddingHorizontal: 16, gap: 16 },
   tabs: { flexDirection: "row", justifyContent: "space-between", paddingBottom: 8 },
   tab: { fontFamily: SANS, color: "#645c52", fontSize: 13, paddingVertical: 8, borderBottomWidth: 2, borderBottomColor: "transparent" },
-  tabOn: { fontFamily: SANS, color: "#1c1712", fontSize: 13, paddingVertical: 8, borderBottomWidth: 2, borderBottomColor: "#1c1712" },
+  tabOn: { fontFamily: SANS, color: "#1c1712", fontSize: 13, paddingVertical: 8, borderBottomWidth: 2, borderBottomColor: "#1e4636" },
   sheetWrap: { flex: 1, justifyContent: "flex-end" },
   backdrop: { flex: 1, backgroundColor: "rgba(28, 23, 18, 0.28)" },
   sheet: { height: "72%", backgroundColor: "#fffaf3", borderTopLeftRadius: 12, borderTopRightRadius: 12, borderWidth: 1, borderColor: "#e2d5c3" },

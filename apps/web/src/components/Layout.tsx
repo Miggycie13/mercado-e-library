@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
-import { NavLink, Outlet } from "react-router-dom";
+import { NavLink, Outlet, useLocation } from "react-router-dom";
 import { api, type Quota } from "../api";
 import { useAuth } from "../auth";
 import { ChatDock } from "./ChatDock";
 
 export function Layout() {
   const { user, logout } = useAuth();
+  const { pathname } = useLocation();
   const [quota, setQuota] = useState<Quota | null>(null);
   const [quotaError, setQuotaError] = useState("");
 
@@ -58,7 +59,9 @@ export function Layout() {
               <button className="ghost" onClick={() => logout()}>Log out</button>
             </>
           ) : (
-            <NavLink to="/login" className="ghost">Sign in</NavLink>
+            <NavLink to={pathname === "/login" ? "/register" : "/login"} className="ghost">
+              {pathname === "/login" ? "Create an account" : "Sign in"}
+            </NavLink>
           )}
         </div>
       </header>
