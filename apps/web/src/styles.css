@@ -78,12 +78,12 @@ button:disabled { opacity: 0.45; cursor: not-allowed; }
 .hero { display: grid; grid-template-columns: 1.4fr 0.8fr; gap: 24px; align-items: start; margin-bottom: 24px; }
 .hero h1 { font-family: Newsreader, serif; font-size: 40px; font-weight: 560; letter-spacing: -0.03em; line-height: 1.05; }
 .book-title { font-family: Newsreader, serif; font-size: 28px; font-weight: 560; letter-spacing: -0.03em; line-height: 1.15; }
-.panel, .detail, .stat, .chat-panel, .form-card {
+.panel, .stat, .chat-panel, .form-card, .detail-copy {
   background: var(--card);
   border: 1px solid var(--line);
   border-radius: 12px;
 }
-.panel, .stat, .detail, .form-card { padding: 16px; }
+.panel, .stat, .form-card, .detail-copy { padding: 16px; }
 .panel { display: grid; gap: 16px; }
 .form-card { max-width: 28rem; margin-inline: auto; display: grid; gap: 16px; }
 .fields { display: grid; gap: 16px; }
@@ -117,7 +117,7 @@ textarea { min-height: 96px; resize: vertical; }
 }
 .cover {
   position: relative;
-  height: 148px;
+  height: 210px;
   flex: none;
   padding: 16px;
   display: flex;
@@ -128,7 +128,10 @@ textarea { min-height: 96px; resize: vertical; }
   color: #f6f1e7;
   overflow: hidden;
   border-radius: 4px;
+  box-shadow: 0 8px 16px rgba(28, 23, 18, 0.16);
+  transition: transform 160ms ease;
 }
+.book:hover .cover { transform: translateY(-3px); }
 .cover::before {
   content: "";
   position: absolute;
@@ -161,7 +164,7 @@ textarea { min-height: 96px; resize: vertical; }
   overflow: hidden;
 }
 .book .meta { padding: 8px 2px 0; background: transparent; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.detail { display: grid; grid-template-columns: 240px 1fr; gap: 24px; align-items: start; }
+.detail { display: grid; grid-template-columns: 240px 1fr; gap: 24px; align-items: start; background: transparent; border: 0; padding: 0; }
 .detail .cover { height: 280px; min-height: 280px; border-radius: 4px; }
 .detail-copy { display: grid; gap: 16px; align-content: start; }
 .actions { display: flex; flex-wrap: wrap; gap: 8px; }
