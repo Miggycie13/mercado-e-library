@@ -142,6 +142,7 @@ export default function App() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [accountFocus, setAccountFocus] = useState("");
   const [note, setNote] = useState("");
   const [chatOpen, setChatOpen] = useState(false);
   const [draft, setDraft] = useState("");
@@ -446,55 +447,58 @@ export default function App() {
                 <Text style={styles.muted}>We sent a 6-digit code to {email}.</Text>
                 <View style={styles.field}>
                   <Text style={styles.label}>Code</Text>
-                  <TextInput style={styles.accountInput} value={code} onChangeText={setCode} keyboardType="number-pad" />
+                  <TextInput style={[styles.accountInput, accountFocus === "code" && styles.accountInputOn]} value={code} onChangeText={setCode} keyboardType="number-pad" onFocus={() => setAccountFocus("code")} onBlur={() => setAccountFocus("")} />
                 </View>
                 <Pressable style={styles.solid} onPress={confirmCode}><Text style={styles.solidText}>Confirm</Text></Pressable>
-                <Pressable onPress={sendNewCode}><Text style={styles.link}>Send a new code</Text></Pressable>
+                <Pressable style={styles.linkCenter} onPress={sendNewCode}><Text style={styles.link}>Send a new code</Text></Pressable>
               </>
             ) : accountMode === "register" ? (
               <>
                 <Text style={styles.heading}>Create an account</Text>
                 <View style={styles.field}>
                   <Text style={styles.label}>Name</Text>
-                  <TextInput style={styles.accountInput} value={name} onChangeText={setName} autoCapitalize="words" />
+                  <TextInput style={[styles.accountInput, accountFocus === "name" && styles.accountInputOn]} value={name} onChangeText={setName} autoCapitalize="words" onFocus={() => setAccountFocus("name")} onBlur={() => setAccountFocus("")} />
                 </View>
                 <View style={styles.field}>
                   <Text style={styles.label}>Email</Text>
-                  <TextInput style={styles.accountInput} autoCapitalize="none" value={email} onChangeText={setEmail} />
+                  <TextInput style={[styles.accountInput, accountFocus === "register-email" && styles.accountInputOn]} autoCapitalize="none" value={email} onChangeText={setEmail} onFocus={() => setAccountFocus("register-email")} onBlur={() => setAccountFocus("")} />
                 </View>
                 <View style={styles.field}>
                   <Text style={styles.label}>Password</Text>
-                  <TextInput style={styles.accountInput} secureTextEntry value={password} onChangeText={setPassword} />
+                  <TextInput style={[styles.accountInput, accountFocus === "register-password" && styles.accountInputOn]} secureTextEntry value={password} onChangeText={setPassword} onFocus={() => setAccountFocus("register-password")} onBlur={() => setAccountFocus("")} />
+                  <Text style={styles.muted}>Use at least 8 characters.</Text>
                 </View>
                 <Pressable style={styles.solid} onPress={register}><Text style={styles.solidText}>Create account</Text></Pressable>
-                <Pressable onPress={() => { setAccountMode("sign-in"); setError(""); setEmail(""); setPassword(""); }}>
+                <Pressable style={styles.linkCenter} onPress={() => { setAccountMode("sign-in"); setError(""); setEmail(""); setPassword(""); }}>
                   <Text style={styles.link}>Sign in</Text>
                 </Pressable>
               </>
             ) : (
               <>
                 <Text style={styles.heading}>Sign in</Text>
-                <Text style={styles.muted}>Save books to My Library and Favorites. A reader has 10 downloads.</Text>
+                <Text style={styles.muted}>Save books to My Library and Favorites.</Text>
                 <View style={styles.field}>
                   <Text style={styles.label}>Email</Text>
-                  <TextInput style={styles.accountInput} autoCapitalize="none" value={email} onChangeText={setEmail} />
+                  <TextInput style={[styles.accountInput, accountFocus === "email" && styles.accountInputOn]} autoCapitalize="none" value={email} onChangeText={setEmail} onFocus={() => setAccountFocus("email")} onBlur={() => setAccountFocus("")} />
                 </View>
                 <View style={styles.field}>
                   <Text style={styles.label}>Password</Text>
-                  <TextInput style={styles.accountInput} secureTextEntry value={password} onChangeText={setPassword} />
+                  <TextInput style={[styles.accountInput, accountFocus === "password" && styles.accountInputOn]} secureTextEntry value={password} onChangeText={setPassword} onFocus={() => setAccountFocus("password")} onBlur={() => setAccountFocus("")} />
                 </View>
                 <Pressable style={styles.solid} onPress={signIn}><Text style={styles.solidText}>Sign in</Text></Pressable>
-                <Pressable onPress={() => { setAccountMode("register"); setError(""); setName(""); setEmail(""); setPassword(""); }}>
+                <Pressable style={styles.linkCenter} onPress={() => { setAccountMode("register"); setError(""); setName(""); setEmail(""); setPassword(""); }}>
                   <Text style={styles.link}>Create an account</Text>
                 </Pressable>
-                <Text style={styles.muted}>Class sign-in</Text>
-                <Text style={styles.muted}>Reader: reader@elibrary.local / Reader123!</Text>
-                <Text style={styles.muted}>Admin: admin@elibrary.local / Admin123!</Text>
+                <View style={styles.classSignin}>
+                  <Text style={styles.muted}>Class sign-in</Text>
+                  <Text style={styles.muted}>Reader: reader@elibrary.local / Reader123!</Text>
+                  <Text style={styles.muted}>Admin: admin@elibrary.local / Admin123!</Text>
+                </View>
               </>
             )}
             <View style={styles.field}>
               <Text style={styles.label}>API address</Text>
-              <TextInput style={styles.accountInput} autoCapitalize="none" value={base} onChangeText={saveBase} />
+              <TextInput style={[styles.accountInput, accountFocus === "api" && styles.accountInputOn]} autoCapitalize="none" value={base} onChangeText={saveBase} onFocus={() => setAccountFocus("api")} onBlur={() => setAccountFocus("")} />
             </View>
             <Text style={styles.muted}>The emulator uses 10.0.2.2, and a phone on the same Wi-Fi uses the computer's LAN address.</Text>
           </View>
@@ -637,7 +641,10 @@ const styles = StyleSheet.create({
   catalogHead: { paddingHorizontal: 16, paddingTop: 16, paddingBottom: 16, gap: 8 },
   filterRow: { gap: 16, alignItems: "center" },
   searchFlush: { margin: 0 },
-  form: { width: "100%", maxWidth: 448, gap: 16 },
+  form: { width: "100%", maxWidth: 448, gap: 16, padding: 8, backgroundColor: "#fffaf3", borderWidth: 1, borderColor: "#e2d5c3", borderRadius: 12, shadowColor: "#1c1712", shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.06, shadowRadius: 12, elevation: 3 },
+  accountInputOn: { borderColor: "#1c1712" },
+  linkCenter: { alignSelf: "center" },
+  classSignin: { gap: 4, borderTopWidth: 1, borderTopColor: "#e2d5c3", paddingTop: 16 },
   field: { gap: 8 },
   accountInput: { fontFamily: SANS, backgroundColor: "#fffaf3", borderRadius: 8, paddingHorizontal: 16, paddingVertical: 8, borderWidth: 1, borderColor: "#e2d5c3", fontSize: 15, color: "#1c1712" },
   note: { fontFamily: SANS, color: "#645c52", fontSize: 13 },

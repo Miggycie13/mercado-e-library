@@ -76,7 +76,7 @@ export function LoginPage() {
       }
     }}>
       <h1>Sign in</h1>
-      <p className="muted">Save books to My Library and Favorites. A reader has 10 downloads.</p>
+      <p className="muted">Save books to My Library and Favorites.</p>
       <label className="field">
         <span>Email</span>
         <input value={email} onChange={(event) => setEmail(event.target.value)} type="email" aria-label="Email" required />
@@ -140,6 +140,7 @@ export function RegisterPage() {
         <span>Password</span>
         <input value={password} onChange={(event) => setPassword(event.target.value)} type="password" aria-label="Password" required />
       </label>
+      <p className="muted">Use at least 8 characters.</p>
       {error && <p className="error">{error}</p>}
       <button className="solid" type="submit">Create account</button>
       <Link className="textish" to="/login">Sign in</Link>
