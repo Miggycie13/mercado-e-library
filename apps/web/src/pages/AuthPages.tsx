@@ -53,8 +53,8 @@ function CodeStep({ email, password }: { email: string; password: string }) {
 export function LoginPage() {
   const { user, login } = useAuth();
   const navigate = useNavigate();
-  const [email, setEmail] = useState("reader@elibrary.local");
-  const [password, setPassword] = useState("Reader123!");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [needsCode, setNeedsCode] = useState(false);
   const [error, setError] = useState("");
 

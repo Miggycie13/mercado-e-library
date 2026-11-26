@@ -140,8 +140,8 @@ export default function App() {
   const [accountMode, setAccountMode] = useState<"sign-in" | "register" | "code">("sign-in");
   const [code, setCode] = useState("");
   const [name, setName] = useState("");
-  const [email, setEmail] = useState("reader@elibrary.local");
-  const [password, setPassword] = useState("Reader123!");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [note, setNote] = useState("");
   const [chatOpen, setChatOpen] = useState(false);
   const [draft, setDraft] = useState("");
@@ -467,14 +467,14 @@ export default function App() {
                   <TextInput style={styles.accountInput} secureTextEntry value={password} onChangeText={setPassword} />
                 </View>
                 <Pressable style={styles.solid} onPress={register}><Text style={styles.solidText}>Create account</Text></Pressable>
-                <Pressable onPress={() => { setAccountMode("sign-in"); setError(""); setEmail("reader@elibrary.local"); setPassword("Reader123!"); }}>
+                <Pressable onPress={() => { setAccountMode("sign-in"); setError(""); setEmail(""); setPassword(""); }}>
                   <Text style={styles.link}>Sign in</Text>
                 </Pressable>
               </>
             ) : (
               <>
                 <Text style={styles.heading}>Sign in</Text>
-                <Text style={styles.muted}>Reader: reader@elibrary.local / Reader123! · Admin: admin@elibrary.local / Admin123!</Text>
+                <Text style={styles.muted}>Save books to My Library and Favorites. A reader has 10 downloads.</Text>
                 <View style={styles.field}>
                   <Text style={styles.label}>Email</Text>
                   <TextInput style={styles.accountInput} autoCapitalize="none" value={email} onChangeText={setEmail} />
@@ -487,6 +487,9 @@ export default function App() {
                 <Pressable onPress={() => { setAccountMode("register"); setError(""); setName(""); setEmail(""); setPassword(""); }}>
                   <Text style={styles.link}>Create an account</Text>
                 </Pressable>
+                <Text style={styles.muted}>Class sign-in</Text>
+                <Text style={styles.muted}>Reader: reader@elibrary.local / Reader123!</Text>
+                <Text style={styles.muted}>Admin: admin@elibrary.local / Admin123!</Text>
               </>
             )}
             <View style={styles.field}>
