@@ -128,10 +128,10 @@ button:disabled { opacity: 0.45; cursor: not-allowed; }
 .forgot { background: none; border: 0; padding: 0; color: var(--muted); font: inherit; font-size: 13px; cursor: pointer; text-decoration: underline; }
 .secret { position: relative; display: block; }
 .field .secret { font-size: 15px; color: var(--ink); }
-.secret input { padding-right: 40px; }
+.field .secret input { padding-right: 44px; }
 .eye {
   position: absolute;
-  right: 8px;
+  right: 12px;
   top: 50%;
   transform: translateY(-50%);
   display: inline-flex;
@@ -141,8 +141,9 @@ button:disabled { opacity: 0.45; cursor: not-allowed; }
   padding: 4px;
   cursor: pointer;
 }
+.eye:hover { color: var(--green); }
 .remember { display: flex; align-items: center; gap: 8px; }
-.remember input { width: auto; }
+.remember input { width: auto; accent-color: var(--green); }
 .auth-switch { margin: 0; text-align: center; }
 .auth-switch a { color: #1e4636; font-weight: 700; text-decoration: none; }
 .password-ready { color: #1e4636; margin: 0; }
@@ -162,7 +163,7 @@ textarea { min-height: 96px; resize: vertical; }
   padding: 8px 16px;
 }
 .form-card .field input:focus {
-  border-color: #1c1712;
+  border-color: var(--green);
   outline: none;
 }
 ::placeholder { color: var(--muted); opacity: 1; }
