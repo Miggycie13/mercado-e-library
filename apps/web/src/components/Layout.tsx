@@ -46,8 +46,8 @@ export function Layout() {
         </NavLink>
         <nav className="nav">
           <NavLink to="/" end>Catalog</NavLink>
-          <NavLink to="/library">My Library</NavLink>
-          <NavLink to="/favorites">Favorites</NavLink>
+          {user && <NavLink to="/library">My Library</NavLink>}
+          {user && <NavLink to="/favorites">Favorites</NavLink>}
           {user?.role === "admin" && <NavLink to="/admin">Admin</NavLink>}
         </nav>
         <div className="account">
@@ -59,8 +59,8 @@ export function Layout() {
               <button className="ghost" onClick={() => logout()}>Log out</button>
             </>
           ) : (
-            <NavLink to={pathname === "/login" ? "/register" : "/login"} className="ghost">
-              {pathname === "/login" ? "Create an account" : "Sign in"}
+            <NavLink to={pathname === "/login" ? "/" : "/login"} className="ghost">
+              {pathname === "/login" ? "Browse Catalog" : "Sign in"}
             </NavLink>
           )}
         </div>
