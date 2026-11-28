@@ -4,7 +4,14 @@ import { executeTool, toolDefinitions, type ToolTrace } from "./tools";
 
 type ChatTurn = { role: "user" | "assistant"; content: string };
 
-type MemoryBook = { id: string; title: string; author: string };
+type MemoryBook = {
+  id: string;
+  title: string;
+  author: string;
+  year?: number;
+  category?: string;
+  description?: string;
+};
 
 type PendingAction = {
   confirmationId: string;
@@ -30,13 +37,23 @@ type AgentResult = {
 const memory = new Map<string, { books: MemoryBook[]; updatedAt: number }>();
 const pending = new Map<string, PendingAction>();
 
-const SYSTEM = `You are the librarian embedded inside The Emerald Archive. You may only state catalog facts that come back from tools.
-Rules:
-- For any book question, call search_books, then call get_book_details on a returned id before you recommend or compare.
-- Never invent titles, authors, or ids.
-- When the reader asks to add or save a book to My Library or favorites, call add_to_my_library. Do not claim it was saved. The app asks the reader to confirm, and only a confirmed call writes to the database.
-- If the reader is not signed in, tell them to sign in before saving.
-- Keep answers concise and specific to the tool results.`;
+const SYSTEM = `You are the librarian embedded inside The Emerald Archive. You may only state catalog facts that come back from tools. Decide the situation from the latest reader message and from books already shown in this session.
+Situations:
+- Greeting or "what can you do?": say you can find a book, name its author, year, and category, list books by an author or in a category, compare two titles, explain the download limit, and ask before saving a book.
+- Who wrote a title, what year it was published, what category it is in, and a short description. Call search_books, then get_book_details on a returned id before you state a title, author, year, category, or description.
+- Books by a named author: pass the author to search_books and name up to three, each with year and category, after get_book_details.
+- Books in Adventure, Children's, Drama, Essays, Fiction, History, Mystery, Philosophy, or Poetry: pass that category to search_books and name up to three, after get_book_details.
+- A recommendation, including "something like" a title already found: search, then recommend up to three real matches. Say why each one fits using only its category, year, or description.
+- A comparison of two titles: search both, then get_book_details, then compare.
+- A follow-up that says "it", "that one", "the first", "the second", or "tell me more": use the book already loaded in the session. Do not search those words as a new title.
+- Add or save to My Library or favorites: call add_to_my_library only as a confirmation request. Do not claim it was saved. If the reader is not signed in, tell them to sign in and do not start a confirmation.
+- Download limit, only when asked: a guest may download 5 distinct books, a signed-in reader may download 10, and downloading the same book again does not use another slot.
+- How many books are in the catalog: use the total returned by search_books.
+- One message with more than one question: answer each part. Do not split a comparison or a save request.
+- No catalog match: say nothing matched. Never invent a title, author, year, or description.
+- A question that is not about the catalog, an account, or downloads: say you can help with the library, then offer to find a book. Do not answer the off-topic question.
+- A title that matches several different books: name up to three and ask which one the reader means.
+Keep answers short and specific to the tool results.`;
 
 function remember(sessionId: string, books: MemoryBook[]) {
   memory.set(sessionId, { books, updatedAt: Date.now() });
@@ -121,6 +138,282 @@ function compareSides(text: string) {
   return [match[0], match[1]];
 }
 
+const CATEGORY_PATTERNS: Array<[string, RegExp]> = [
+  ["Adventure", /\badventure\b/],
+  ["Children's", /\bchildren(?:['’]s|s)?\b/],
+  ["Drama", /\bdrama\b/],
+  ["Essays", /\bessays?\b/],
+  ["Fiction", /\bfiction\b/],
+  ["History", /\bhistory\b/],
+  ["Mystery", /\bmyster(?:y|ies)\b/],
+  ["Philosophy", /\bphilosoph(?:y|ical)\b/],
+  ["Poetry", /\b(?:poetry|poems?)\b/],
+];
+
+function categoryFrom(text: string) {
+  return CATEGORY_PATTERNS.find(([, pattern]) => pattern.test(text))?.[0] || "";
+}
+
+function normalizeTitle(value: string) {
+  return value.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+}
+
+function titleQuery(raw: string) {
+  return raw
+    .replace(/[?]/g, " ")
+    .replace(/\b(who wrote|who is the author of|who is the author|author of|what year was|what year is|when was|when did|what category is|which category is|what category|was it published|it published|published|tell me more about|tell me about|describe|what is|what's|please|can you|could you)\b/gi, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function questionParts(message: string) {
+  if (!message.includes("?")) return [message];
+  const parts = message.split("?").map((part) => part.trim()).filter(Boolean);
+  return parts.length ? parts : [message];
+}
+
+function isGreeting(text: string) {
+  return /^(hi|hello|hey|good morning|good afternoon|good evening)\b/.test(text.trim()) || /\b(what can you do|how can you help|what do you do)\b/.test(text);
+}
+
+function isDownloadQuestion(text: string) {
+  return (/\bhow many\b/.test(text) && /\bdownloads?\b/.test(text)) || /\bhow many books can\b/.test(text);
+}
+
+function isCatalogCount(text: string) {
+  return /\bhow many books\b/.test(text) && /\b(catalog|library|archive|shelf|are there|do you have)\b/.test(text);
+}
+
+function isOffTopic(text: string) {
+  if (/\b(book|books|catalog|library|author|wrote|download|account|sign in|signin|favorite|favourites|recommend|novel|poem|shelf)\b/.test(text)) return false;
+  if (categoryFrom(text)) return false;
+  return /\b(weather|temperature|forecast|news|sport|joke|recipe|capital|translate|movie|song|president|math|calculate|homework)\b/.test(text);
+}
+
+function isFollowUp(text: string) {
+  if (/\b(tell me more|that one|the first|the second|the third)\b/.test(text)) {
+    const stripped = text.replace(/\b(tell me more about|tell me more|that one|the first one|the second one|the third one|the first|the second|the third|about|please)\b/g, " ");
+    if (!searchTokens(stripped).length) return true;
+  }
+  return /\b(it|that|this)\b/.test(text) && /\b(year|when|published|wrote|author|category|describe|about|more)\b/.test(text);
+}
+
+function isRecommend(text: string) {
+  return /\b(recommend|suggest|something like|similar to|read next)\b/.test(text);
+}
+
+function wantsCategoryList(text: string) {
+  const category = categoryFrom(text);
+  if (!category) return "";
+  if (/\b(who wrote|who is the author|what year|when was|published|compare)\b/.test(text)) return "";
+  if (isRecommend(text)) return "";
+  if (/\b(have|list|show|find|any|some|books)\b/.test(text) || /\bwhat\b/.test(text)) return category;
+  return "";
+}
+
+function authorFrom(raw: string) {
+  const match = raw.match(/\b(?:books?\s+(?:are\s+)?by|written by|works by)\s+([a-z][a-z.'’\-]+(?:\s+[a-z][a-z.'’\-]+){0,4})/i);
+  if (!match) return "";
+  return match[1].replace(/\b(in|from|the|catalog|library|please)\b.*$/i, "").replace(/[?.!,]+$/g, "").trim();
+}
+
+function firstSentence(description?: string) {
+  if (!description) return "";
+  const sentence = description.split(/(?<=\.)\s/)[0];
+  return sentence || description;
+}
+
+function localResult(reply: string, trace: ToolTrace[], pendingAction: AgentResult["pendingAction"] = null): AgentResult {
+  return { reply, toolTrace: trace, pendingAction, mode: "local" };
+}
+
+function libraryHelp() {
+  return "I can help with the library. I can find a book, name its author, year, and category, list books by an author or in a category, compare two titles, and ask before saving one. Which book should I look up?";
+}
+
+function capabilityReply() {
+  return "I can find a book, name its author, year, and category, list books by an author or in a category, compare two titles, explain the download limit, and ask before saving a book.";
+}
+
+function downloadReply() {
+  return "A guest may download 5 distinct books. A signed-in reader may download 10. Downloading the same book again does not use another slot.";
+}
+
+function nothingMatched() {
+  return "Nothing in the live catalog matched those words.";
+}
+
+function focusBook(sessionId: string, book: MemoryBook) {
+  const rest = recall(sessionId).filter((item) => item.id !== book.id);
+  remember(sessionId, [book, ...rest].slice(0, 5));
+}
+
+function mergeDetail(sessionId: string, detail: MemoryBook) {
+  const books = recall(sessionId).map((book) => (book.id === detail.id ? { ...book, ...detail } : book));
+  if (!books.some((book) => book.id === detail.id)) books.unshift(detail);
+  remember(sessionId, books);
+}
+
+async function searchCatalog(
+  trace: ToolTrace[],
+  sessionId: string,
+  args: Record<string, unknown>,
+  userId?: string
+) {
+  const found = (await traced(trace, sessionId, "search_books", args, userId)) as {
+    total?: number;
+    books?: MemoryBook[];
+  };
+  return { total: found.total || 0, books: found.books || [] };
+}
+
+async function loadDetail(trace: ToolTrace[], sessionId: string, bookId: string, userId?: string) {
+  const detail = (await traced(trace, sessionId, "get_book_details", { book_id: bookId }, userId)) as MemoryBook & {
+    error?: string;
+  };
+  if (!detail?.id || !detail.title) return null;
+  mergeDetail(sessionId, detail);
+  return detail;
+}
+
+async function loadListed(trace: ToolTrace[], sessionId: string, books: MemoryBook[], userId?: string) {
+  const details: MemoryBook[] = [];
+  for (const book of books.slice(0, 3)) {
+    const detail = await loadDetail(trace, sessionId, book.id, userId);
+    if (detail?.title) details.push(detail);
+  }
+  return details;
+}
+
+function describeBook(book: MemoryBook, text: string) {
+  if (/\b(who wrote|who is the author|author)\b/.test(text)) {
+    return `${book.title} was written by ${book.author}.`;
+  }
+  if (/\b(year|when|published)\b/.test(text)) {
+    return `${book.title} was published in ${book.year}.`;
+  }
+  if (/\bcategory\b/.test(text)) {
+    return `${book.title} is in ${book.category}.`;
+  }
+  return `${book.title} by ${book.author} (${book.year}, ${book.category}). ${firstSentence(book.description)}`;
+}
+
+function listReply(label: string, books: MemoryBook[]) {
+  const lines = books.map((book) => `${book.title} by ${book.author} (${book.year}, ${book.category})`);
+  return `${label}: ${lines.join("; ")}.`;
+}
+
+function chooseBook(query: string, books: MemoryBook[]) {
+  const norm = normalizeTitle(query);
+  const tokens = searchTokens(query);
+  const exact = books.filter((book) => normalizeTitle(book.title) === norm);
+  if (exact.length === 1) return { chosen: exact[0], options: [] as MemoryBook[] };
+  if (exact.length > 1) return { chosen: null, options: exact.slice(0, 3) };
+  const titled = books.filter((book) => {
+    const title = normalizeTitle(book.title);
+    return tokens.length > 0 && tokens.every((token) => title.split(" ").includes(token) || title.includes(token));
+  });
+  if (titled.length === 1) return { chosen: titled[0], options: [] as MemoryBook[] };
+  if (titled.length > 1) return { chosen: null, options: titled.slice(0, 3) };
+  if (books.length === 1) return { chosen: books[0], options: [] as MemoryBook[] };
+  return { chosen: books[0] || null, options: [] as MemoryBook[] };
+}
+
+async function answerFollowUp(text: string, sessionId: string, userId: string | undefined, trace: ToolTrace[]) {
+  const known = recall(sessionId);
+  if (!known.length) return "Name a title and I will look it up in the catalog.";
+  const index = ordinal(text);
+  const book = known[index >= 0 ? index : 0];
+  if (!book) return "Name a title from the last list, or ask about the first one.";
+  const loaded = await loadDetail(trace, sessionId, book.id, userId);
+  if (!loaded?.title) return nothingMatched();
+  focusBook(sessionId, loaded);
+  return describeBook(loaded, text);
+}
+
+async function answerRecommendation(raw: string, text: string, sessionId: string, userId: string | undefined, trace: ToolTrace[]) {
+  let category = categoryFrom(text);
+  let excludeId = "";
+  const like = raw.match(/\b(?:something like|similar to)\s+(.+)$/i);
+  if (isFollowUp(text) && recall(sessionId).length) {
+    const index = ordinal(text);
+    const base = recall(sessionId)[index >= 0 ? index : 0];
+    excludeId = base?.id || "";
+    category = category || base?.category || "";
+  } else if (like?.[1]) {
+    const found = await searchCatalog(trace, sessionId, { query: like[1] }, userId);
+    const picked = chooseBook(like[1], found.books);
+    if (picked.chosen) {
+      const detail = await loadDetail(trace, sessionId, picked.chosen.id, userId);
+      excludeId = detail?.id || "";
+      category = category || detail?.category || "";
+    }
+  }
+  const args = category ? { category, query: raw } : { query: raw };
+  const found = await searchCatalog(trace, sessionId, args, userId);
+  const picks = found.books.filter((book) => book.id !== excludeId).slice(0, 3);
+  const details = await loadListed(trace, sessionId, picks, userId);
+  if (!details.length) return nothingMatched();
+  return details
+    .map((book) => `${book.title} by ${book.author} fits because it is ${book.category} from ${book.year}. ${firstSentence(book.description)}`)
+    .join(" ");
+}
+
+async function answerAuthor(author: string, sessionId: string, userId: string | undefined, trace: ToolTrace[]) {
+  const found = await searchCatalog(trace, sessionId, { author }, userId);
+  const details = await loadListed(trace, sessionId, found.books, userId);
+  if (!details.length) return nothingMatched();
+  return listReply(`Books by ${details[0].author}`, details);
+}
+
+async function answerCategory(category: string, sessionId: string, userId: string | undefined, trace: ToolTrace[]) {
+  const found = await searchCatalog(trace, sessionId, { category }, userId);
+  const details = await loadListed(trace, sessionId, found.books, userId);
+  if (!details.length) return nothingMatched();
+  return listReply(category, details);
+}
+
+async function answerTitle(raw: string, text: string, sessionId: string, userId: string | undefined, trace: ToolTrace[]) {
+  const query = titleQuery(raw) || raw;
+  const found = await searchCatalog(trace, sessionId, { query }, userId);
+  if (!found.books.length) return nothingMatched();
+  const picked = chooseBook(query, found.books);
+  if (!picked.chosen && picked.options.length > 1) {
+    const details = await loadListed(trace, sessionId, picked.options, userId);
+    if (details.length < 2) return nothingMatched();
+    return `I found more than one book. Did you mean ${details.map((book) => `${book.title} by ${book.author}`).join(", ")}?`;
+  }
+  const chosen = picked.chosen;
+  if (!chosen) return nothingMatched();
+  const detail = await loadDetail(trace, sessionId, chosen.id, userId);
+  if (!detail?.title) return nothingMatched();
+  focusBook(sessionId, detail);
+  return describeBook(detail, text);
+}
+
+async function answerSituation(raw: string, sessionId: string, userId: string | undefined, trace: ToolTrace[]) {
+  const text = raw.toLowerCase();
+  if (isGreeting(text)) return capabilityReply();
+  if (isDownloadQuestion(text)) return downloadReply();
+  if (isCatalogCount(text)) {
+    const previous = recall(sessionId);
+    const found = await searchCatalog(trace, sessionId, {}, userId);
+    remember(sessionId, previous);
+    return `The catalog has ${found.total} books.`;
+  }
+  if (isRecommend(text)) return answerRecommendation(raw, text, sessionId, userId, trace);
+  if (isFollowUp(text)) return answerFollowUp(text, sessionId, userId, trace);
+  if (isOffTopic(text)) return libraryHelp();
+  const category = wantsCategoryList(text);
+  if (category) return answerCategory(category, sessionId, userId, trace);
+  const author = authorFrom(raw);
+  if (author) return answerAuthor(author, sessionId, userId, trace);
+  if (/\b(who wrote|author of|what year|when was|what category|which category|tell me about|describe|what is)\b/.test(text) || searchTokens(titleQuery(raw)).length) {
+    return answerTitle(raw, text, sessionId, userId, trace);
+  }
+  return libraryHelp();
+}
+
 async function localAgent(sessionId: string, messages: ChatTurn[], userId?: string): Promise<AgentResult> {
   const lastUser = [...messages].reverse().find((message) => message.role === "user")?.content || "";
   const text = lastUser.toLowerCase();
@@ -203,55 +496,13 @@ async function localAgent(sessionId: string, messages: ChatTurn[], userId?: stri
     };
   }
 
-  const found = (await traced(
-    trace,
-    sessionId,
-    "search_books",
-    { query: lastUser },
-    userId
-  )) as { total: number; books?: Array<MemoryBook & { year: number; category: string; description: string }> };
-
-  if (!found.books?.length) {
-    const featured = (await traced(trace, sessionId, "search_books", {}, userId)) as typeof found;
-    const first = featured.books?.[0];
-    if (first) await traced(trace, sessionId, "get_book_details", { book_id: first.id }, userId);
-    return {
-      reply: first
-        ? `Nothing in the live catalog matched those words. A place to start is ${first.title} by ${first.author} (${first.year}, ${first.category}).`
-        : "The catalog is empty.",
-      toolTrace: trace,
-      pendingAction: null,
-      mode: "local",
-    };
+  const parts = questionParts(lastUser);
+  if (parts.length > 1) {
+    const replies: string[] = [];
+    for (const part of parts) replies.push(await answerSituation(part, sessionId, userId, trace));
+    return localResult(replies.join(" "), trace);
   }
-
-  const detail = (await traced(trace, sessionId, "get_book_details", { book_id: found.books[0].id }, userId)) as {
-    title?: string;
-    author?: string;
-    year?: number;
-    category?: string;
-    description?: string;
-    error?: string;
-  };
-  if (!detail.title) {
-    return {
-      reply: detail.error || "The catalog search did not return a readable record.",
-      toolTrace: trace,
-      pendingAction: null,
-      mode: "local",
-    };
-  }
-  const also = found.books.slice(1, 3).map((book) => `${book.title} by ${book.author}`).join("; ");
-  const tokens = searchTokens(lastUser);
-  const lead = tokens.length
-    ? `From the live catalog, the closest match is ${detail.title} by ${detail.author} (${detail.year}, ${detail.category}). ${detail.description}`
-    : `Here is a catalog pick: ${detail.title} by ${detail.author} (${detail.year}, ${detail.category}). ${detail.description}`;
-  return {
-    reply: also ? `${lead} Also on the shelf: ${also}.` : lead,
-    toolTrace: trace,
-    pendingAction: null,
-    mode: "local",
-  };
+  return localResult(await answerSituation(lastUser, sessionId, userId, trace), trace);
 }
 
 type OpenAIMessage = Record<string, unknown>;
